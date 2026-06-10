@@ -848,6 +848,14 @@ function fetchSheetData(fromModal = false) {
 
   updateSyncStatus('loading', '同步資料中...');
 
+  // 顯示讀取中狀態於主要數據卡片，讓使用者知道正在自動同步
+  const incCard = document.getElementById('stat-total-income');
+  const expCard = document.getElementById('stat-total-expense');
+  const balCard = document.getElementById('stat-total-balance');
+  if (incCard) incCard.innerText = '讀取中...';
+  if (expCard) expCard.innerText = '讀取中...';
+  if (balCard) balCard.innerText = '讀取中...';
+
   if (state.sheetMode === 'separate') {
     // 獨立分頁模式：同時拉取支出分頁與收入分頁
     const expenseGid = state.expenseGid || '0';

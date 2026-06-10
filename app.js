@@ -326,10 +326,13 @@ function bindEvents() {
   });
 
   // 管理員密碼輸入框變動
-  document.getElementById('setting-admin-password').addEventListener('input', (e) => {
-    state.adminPassword = e.target.value;
-    saveSettingsToStorage();
-  });
+  const adminPwdInput = document.getElementById('setting-admin-password');
+  if (adminPwdInput) {
+    adminPwdInput.addEventListener('input', (e) => {
+      state.adminPassword = e.target.value;
+      saveSettingsToStorage();
+    });
+  }
 
   // 解鎖按鈕點擊
   document.getElementById('btn-unlock-dashboard').addEventListener('click', () => {

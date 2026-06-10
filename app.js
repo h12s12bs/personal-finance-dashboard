@@ -619,6 +619,11 @@ function compressConfig(config) {
 }
 
 function decompressConfig(short) {
+  if (!short) return null;
+  if (short.sheetUrl) {
+    // 支援舊版未壓縮格式的相容性
+    return short;
+  }
   let url = short.u || '';
   if (url && url.indexOf('/') === -1 && url.length > 20) {
     url = `https://docs.google.com/spreadsheets/d/${url}/edit`;

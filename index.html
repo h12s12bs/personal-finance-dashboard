@@ -558,11 +558,15 @@
                 </div>
                 <div id="password-input-group" style="display: none; transition: all 0.3s ease;">
                   <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="setting-lock-password">設定解鎖密碼 (用於加密共用設定)</label>
-                    <input type="password" id="setting-lock-password" class="form-control" placeholder="請輸入自訂解鎖密碼...">
+                    <label for="setting-lock-password">設定網頁解鎖密碼 (提供給家人開啟網頁用，可用於加密共享連結)</label>
+                    <input type="password" id="setting-lock-password" class="form-control" placeholder="請輸入給家人的網頁解鎖密碼...">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="setting-admin-password">設定管理員密碼 (您專用，用於解鎖並修改後台資料設定)</label>
+                    <input type="password" id="setting-admin-password" class="form-control" placeholder="請輸入您專用的管理員登入密碼...">
                   </div>
                   <small class="form-help" style="color: #94a3b8; display: block; line-height: 1.5;">
-                    💡 <strong>安全保護機制</strong>：啟用後，產生的共享連結中會包含<strong>加密後</strong>的連線資訊。任何人開啟網頁都必須輸入此密碼解密，否則完全無法取得您的 Google 試算表 ID。
+                    💡 <strong>安全保護機制</strong>：啟用後，家人的共享連結中會包含<strong>加密後</strong>的設定。家人使用「解鎖密碼」登入後僅能查看儀表板與明細。若要修改設定，需點擊側邊欄底部的「管理員登入」並輸入此「管理員密碼」。
                   </small>
                 </div>
               </div>
@@ -690,6 +694,6 @@
   </div>
 
   <!-- Cache busted script load -->
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>

@@ -325,6 +325,12 @@ function bindEvents() {
     saveSettingsToStorage();
   });
 
+  // 管理員密碼輸入框變動
+  document.getElementById('setting-admin-password').addEventListener('input', (e) => {
+    state.adminPassword = e.target.value;
+    saveSettingsToStorage();
+  });
+
   // 解鎖按鈕點擊
   document.getElementById('btn-unlock-dashboard').addEventListener('click', () => {
     const pwdInput = document.getElementById('input-lock-password');
@@ -356,15 +362,23 @@ function bindEvents() {
   if (adminLoginBtn) {
     adminLoginBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      if (!state.usePassword || !state.lockPassword) {
-        alert('尚未設定解鎖密碼，請先由管理員在主控裝置設定密碼鎖以啟用管理員登入。');
+      if (!state.usePassword) {
+        alert('尚未啟用密碼鎖。請在主控裝置設定密碼鎖以啟用管理員登入。');
         return;
       }
       
-      const pwd = prompt('請輸入管理員解鎖密碼：');
+      const pwd = prompt('請輸入管理員專用密碼：');
       if (pwd === null) return; // 使用者按取消
       
-      if (pwd === state.lockPassword) {
+      const trimmedPwd = pwd.trim();
+      const inputHash = CryptoJS.SHA256(trimmedPwd).toString();
+      const targetHash = state.adminPasswordHash || (state.lockPassword ? CryptoJS.SHA256(state.lockPassword).toString() : '');
+      
+      const isMatch = (targetHash && inputHash === targetHash) || 
+                      (state.adminPassword && trimmedPwd === state.adminPassword) || 
+                      (state.lockPassword && trimmedPwd === state.lockPassword);
+      
+      if (isMatch) {
         state.isAdmin = true;
         saveSettingsToStorage();
         applyAdminAccess();
@@ -525,6 +539,8 @@ function loadSettingsFromStorage() {
       // 載入密碼鎖設定
       state.usePassword = !!config.usePassword;
       state.lockPassword = config.lockPassword || '';
+      state.adminPassword = config.adminPassword || '';
+      state.adminPasswordHash = config.adminPasswordHash || '';
       
       // 載入管理員權限
       state.isAdmin = config.isAdmin !== false;
@@ -549,6 +565,8 @@ function loadSettingsFromStorage() {
       if (chk) chk.checked = state.usePassword;
       const pwdInput = document.getElementById('setting-lock-password');
       if (pwdInput) pwdInput.value = state.lockPassword;
+      const adminPwdInput = document.getElementById('setting-admin-password');
+      if (adminPwdInput) adminPwdInput.value = state.adminPassword;
       const pwdGroup = document.getElementById('password-input-group');
       if (pwdGroup) pwdGroup.style.display = state.usePassword ? 'block' : 'none';
 
@@ -578,6 +596,9 @@ function loadSettingsFromStorage() {
 }
 
 function saveSettingsToStorage() {
+  const currentAdminPwd = state.adminPassword || state.lockPassword;
+  const adminPasswordHash = currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '';
+
   const config = {
     sheetUrl: state.sheetUrl,
     sheetMode: state.sheetMode,
@@ -591,6 +612,8 @@ function saveSettingsToStorage() {
     annualSavingsGoal: state.annualSavingsGoal,
     usePassword: state.usePassword,
     lockPassword: state.lockPassword,
+    adminPassword: state.adminPassword,
+    adminPasswordHash: adminPasswordHash,
     isAdmin: state.isAdmin
   };
   localStorage.setItem('finance_lerou_auto_config', JSON.stringify(config));
@@ -599,6 +622,9 @@ function saveSettingsToStorage() {
 
 function compressConfig(config) {
   const sheetId = extractSpreadsheetId(config.sheetUrl) || config.sheetUrl;
+  const currentAdminPwd = config.adminPassword || config.lockPassword;
+  const adminPasswordHash = currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '';
+
   return {
     u: sheetId,
     m: config.sheetMode === 'separate' ? 's' : 'c',
@@ -610,6 +636,7 @@ function compressConfig(config) {
     mb: config.monthlyBudget || 35000,
     as: config.annualSavingsGoal || 200000,
     ad: !!config.isAdmin,
+    ah: adminPasswordHash,
     mp: {
       e: config.mapping && config.mapping.expense ? {
         d: config.mapping.expense.date || '',
@@ -660,6 +687,7 @@ function decompressConfig(short) {
     monthlyBudget: Number(short.mb) || 35000,
     annualSavingsGoal: Number(short.as) || 200000,
     isAdmin: short.ad !== false,
+    adminPasswordHash: short.ah || '',
     mapping: {
       expense: short.mp && short.mp.e ? {
         date: short.mp.e.d || '',

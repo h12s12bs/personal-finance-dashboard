@@ -576,6 +576,93 @@ function saveSettingsToStorage() {
   generateShareLink();
 }
 
+function compressConfig(config) {
+  const sheetId = extractSpreadsheetId(config.sheetUrl) || config.sheetUrl;
+  return {
+    u: sheetId,
+    m: config.sheetMode === 'separate' ? 's' : 'c',
+    eg: config.expenseGid || '0',
+    ig: config.incomeGid || '',
+    sg: config.singleGid || '0',
+    me: config.matchExpense || '支出',
+    mi: config.matchIncome || '收入',
+    mb: config.monthlyBudget || 35000,
+    as: config.annualSavingsGoal || 200000,
+    ad: !!config.isAdmin,
+    mp: {
+      e: config.mapping && config.mapping.expense ? {
+        d: config.mapping.expense.date || '',
+        m: config.mapping.expense.member || '',
+        c: config.mapping.expense.category || '',
+        a: config.mapping.expense.amount || '',
+        r: config.mapping.expense.remark || ''
+      } : {},
+      i: config.mapping && config.mapping.income ? {
+        d: config.mapping.income.date || '',
+        m: config.mapping.income.member || '',
+        c: config.mapping.income.category || '',
+        s: config.mapping.income.source || '',
+        a: config.mapping.income.amount || '',
+        r: config.mapping.income.remark || ''
+      } : {},
+      cb: config.mapping && config.mapping.combined ? {
+        d: config.mapping.combined.date || '',
+        m: config.mapping.combined.member || '',
+        c: config.mapping.combined.category || '',
+        s: config.mapping.combined.source || '',
+        a: config.mapping.combined.amount || '',
+        r: config.mapping.combined.remark || '',
+        t: config.mapping.combined.type || ''
+      } : {}
+    }
+  };
+}
+
+function decompressConfig(short) {
+  let url = short.u || '';
+  if (url && url.indexOf('/') === -1 && url.length > 20) {
+    url = `https://docs.google.com/spreadsheets/d/${url}/edit`;
+  }
+  return {
+    sheetUrl: url,
+    sheetMode: short.m === 's' ? 'separate' : 'combined',
+    expenseGid: short.eg || '0',
+    incomeGid: short.ig || '',
+    singleGid: short.sg || '0',
+    matchExpense: short.me || '支出',
+    matchIncome: short.mi || '收入',
+    monthlyBudget: Number(short.mb) || 35000,
+    annualSavingsGoal: Number(short.as) || 200000,
+    isAdmin: short.ad !== false,
+    mapping: {
+      expense: short.mp && short.mp.e ? {
+        date: short.mp.e.d || '',
+        member: short.mp.e.m || '',
+        category: short.mp.e.c || '',
+        amount: short.mp.e.a || '',
+        remark: short.mp.e.r || ''
+      } : {},
+      income: short.mp && short.mp.i ? {
+        date: short.mp.i.d || '',
+        member: short.mp.i.m || '',
+        category: short.mp.i.c || '',
+        source: short.mp.i.s || '',
+        amount: short.mp.i.a || '',
+        remark: short.mp.i.r || ''
+      } : {},
+      combined: short.mp && short.mp.cb ? {
+        date: short.mp.cb.d || '',
+        member: short.mp.cb.m || '',
+        category: short.mp.cb.c || '',
+        source: short.mp.cb.s || '',
+        amount: short.mp.cb.a || '',
+        remark: short.mp.cb.r || '',
+        type: short.mp.cb.t || ''
+      } : {}
+    }
+  };
+}
+
 function generateShareLink() {
   const config = {
     sheetUrl: state.sheetUrl,
@@ -591,7 +678,8 @@ function generateShareLink() {
     isAdmin: false // 共享給家人的連結預設為唯讀模式（隱藏資料設定）
   };
   try {
-    const jsonStr = JSON.stringify(config);
+    const compressed = compressConfig(config);
+    const jsonStr = JSON.stringify(compressed);
     const baseUrl = window.location.href.split('?')[0].split('#')[0];
     let shareUrl = '';
     
@@ -624,7 +712,8 @@ function parseSharedUrlConfig() {
     try {
       // 解碼相容 UTF-8 的 Base64 字串
       const jsonStr = decodeURIComponent(atob(configParam).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      const config = JSON.parse(jsonStr);
+      const short = JSON.parse(jsonStr);
+      const config = decompressConfig(short);
       if (config && config.sheetUrl) {
         localStorage.setItem('finance_lerou_auto_config', JSON.stringify(config));
         window.history.replaceState({}, document.title, baseUrl);
@@ -675,7 +764,8 @@ function unlockDashboard(password) {
       const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
       if (!decryptedText) throw new Error('解密失敗，密碼錯誤');
       
-      const config = JSON.parse(decryptedText);
+      const short = JSON.parse(decryptedText);
+      const config = decompressConfig(short);
       if (config && config.sheetUrl) {
         // 解密成功！將配置與密碼寫入本機 LocalStorage，以便下次自動讀取
         config.usePassword = true;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>樂肉家記帳決策儀表板 | Family Finance Dashboard</title>
+  <title>樂肉家記帳系統 | Family Finance System</title>
   
   <!-- Google Fonts: Outfit & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,19 +50,36 @@
     });
   </script>
 
+  <!-- Mobile Top Bar -->
+  <header class="mobile-top-bar">
+    <button id="btn-hamburger" class="hamburger-btn">
+      <i data-lucide="menu"></i>
+    </button>
+    <div class="mobile-brand">
+      <img src="logo.png" alt="樂肉家" class="mobile-logo">
+      <span>樂肉家記帳系統</span>
+    </div>
+    <button class="mobile-sync-btn" id="btn-mobile-sync">
+      <i data-lucide="refresh-cw"></i>
+    </button>
+  </header>
+
+  <!-- Sidebar Overlay for mobile drawer -->
+  <div class="sidebar-overlay" id="sidebar-overlay" style="display: none;"></div>
+
   <div class="app-container">
     
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
-      <div class="brand">
-        <div class="logo-icon">
-          <i data-lucide="wallet"></i>
+      <a href="#" class="brand" id="brand-logo-link" style="text-decoration: none;">
+        <div class="logo-image-container">
+          <img src="logo.png" alt="樂肉家" class="logo-image">
         </div>
         <div class="brand-text">
-          <h2>樂肉家記帳</h2>
-          <span>Family Finance Flow</span>
+          <h2>樂肉家記帳系統</h2>
+          <span>Family Finance System</span>
         </div>
-      </div>
+      </a>
       
       <nav class="nav-menu">
         <a href="#" class="nav-item active" data-tab="dashboard">
@@ -107,7 +124,7 @@
       <!-- Top header -->
       <header class="top-header">
         <div class="header-title">
-          <h1 id="page-title">樂肉家記帳決策儀表板</h1>
+          <h1 id="page-title">樂肉家記帳系統</h1>
           <p class="subtitle" id="page-subtitle">實時自動分類，追蹤全年度與月度的家庭收支</p>
         </div>
         
@@ -725,32 +742,32 @@
   </div>
 
   <!-- Password Lock Overlay -->
-  <div class="modal-overlay" id="password-lock-overlay" style="display: none; z-index: 100000; background: radial-gradient(circle at center, #1e1b4b, #090514); align-items: center; justify-content: center;">
-    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 40px 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(99, 102, 241, 0.2); backdrop-filter: blur(20px);">
+  <div class="modal-overlay" id="password-lock-overlay" style="display: none; z-index: 100000; background: radial-gradient(circle at center, #f4ece1, #faf8f6); align-items: center; justify-content: center;">
+    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 40px 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--card-border); background: #ffffff; color: var(--text-primary);">
       <div style="margin-bottom: 24px;">
-        <div style="width: 64px; height: 64px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-          <i data-lucide="lock" style="width: 32px; height: 32px; color: #818cf8;"></i>
+        <div style="width: 64px; height: 64px; background: rgba(178, 94, 43, 0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <i data-lucide="lock" style="width: 32px; height: 32px; color: var(--color-primary);"></i>
         </div>
-        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; color: #f8fafc; margin-bottom: 8px;">樂肉家記帳決策儀表板</h2>
-        <p style="color: #94a3b8; font-size: 14px;">此儀表板已受密碼保護，請輸入解鎖密碼以觀看內容。</p>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; color: var(--text-primary); margin-bottom: 8px;">樂肉家記帳系統</h2>
+        <p style="color: var(--text-secondary); font-size: 14px;">此系統已受密碼保護，請輸入解鎖密碼以觀看內容。</p>
       </div>
       
       <div class="form-group" style="margin-bottom: 20px;">
-        <input type="password" id="input-lock-password" class="form-control" placeholder="請輸入密碼..." style="text-align: center; font-size: 18px; letter-spacing: 4px; padding: 12px;">
+        <input type="password" id="input-lock-password" class="form-control" placeholder="請輸入密碼..." style="text-align: center; font-size: 18px; letter-spacing: 4px; padding: 12px; background: #ffffff; color: var(--text-primary); border: 1px solid var(--card-border);">
       </div>
       
-      <div id="lock-error-msg" style="color: #f43f5e; font-size: 13px; margin-bottom: 20px; display: none;">
+      <div id="lock-error-msg" style="color: var(--color-expense); font-size: 13px; margin-bottom: 20px; display: none;">
         ⚠️ 密碼錯誤，請重新輸入！
       </div>
       
       <button class="btn btn-primary" id="btn-unlock-dashboard" style="width: 100%; padding: 12px; font-size: 15px;">
         <i data-lucide="unlock"></i>
-        <span>解鎖儀表板</span>
+        <span>解鎖系統</span>
       </button>
     </div>
   </div>
 
   <!-- Cache busted script load -->
-  <script src="app.js?v=23"></script>
+  <script src="app.js?v=24"></script>
 </body>
 </html>

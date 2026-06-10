@@ -7,38 +7,38 @@
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-display: 'Outfit', sans-serif;
 
-  /* 配色系統 */
-  --bg-primary: #0a071a;
-  --bg-secondary: #120d2b;
-  --bg-sidebar: #0e0a24;
+  /* 配色系統 - 大地色與紅貴賓色 (Earth Tones & Red Poodle Colors) */
+  --bg-primary: #faf8f5;          /* 極淺暖沙色 Warm Sand */
+  --bg-secondary: #f3ede4;        /* 燕麥奶油色 Oat Cream */
+  --bg-sidebar: #ebe2d5;          /* 亞麻灰褐色 Linen Taupe */
   
-  --card-bg: rgba(26, 21, 56, 0.35);
-  --card-border: rgba(255, 255, 255, 0.07);
-  --card-hover-bg: rgba(33, 27, 71, 0.5);
-  --card-hover-border: rgba(255, 255, 255, 0.15);
+  --card-bg: #ffffff;            /* 純白卡片，形成乾淨對比 */
+  --card-border: rgba(178, 94, 43, 0.12); /* 紅貴賓暖色邊框 */
+  --card-hover-bg: #fffbf9;      /* 微紅暖白 */
+  --card-hover-border: rgba(178, 94, 43, 0.28);
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #4a3b32;        /* 濃郁深可可色 Dark Chocolate */
+  --text-secondary: #7c6a5e;      /* 暖灰褐色 Warm Taupe */
+  --text-muted: #a38f82;          /* 淺灰泥色 Muted Clay */
   
   /* 功能性色彩 */
-  --color-income: #10b981;      /* 翡翠綠 Emerald */
-  --color-income-glow: rgba(16, 185, 129, 0.15);
-  --color-expense: #f43f5e;     /* 珊瑚紅 Rose */
-  --color-expense-glow: rgba(244, 63, 94, 0.15);
+  --color-income: #2e7d32;        /* 森林綠 Forest Green */
+  --color-income-glow: rgba(46, 125, 50, 0.08);
+  --color-expense: #d32f2f;       /* 紅土磚紅 Terra Cotta Red */
+  --color-expense-glow: rgba(211, 47, 47, 0.08);
   
-  --color-primary: #6366f1;     /* 靛藍 Indigo */
-  --color-primary-glow: rgba(99, 102, 241, 0.25);
-  --color-primary-hover: #4f46e5;
+  --color-primary: #b25e2b;       /* 紅貴賓色 Red Poodle (Cinnamon / Terracotta Copper) */
+  --color-primary-glow: rgba(178, 94, 43, 0.15);
+  --color-primary-hover: #964a1b; /* 深紅貴賓色 Darker Poodle Brown */
   
-  --color-warning: #f59e0b;     /* 琥珀黃 Amber */
-  --color-success: #22c55e;     /* 綠色 Green */
-  --color-info: #0ea5e9;        /* 天空藍 Sky */
+  --color-warning: #c2410c;       /* 焦橙色 Burnt Orange */
+  --color-success: #15803d;       /* 翠綠色 */
+  --color-info: #0369a1;          /* 湖水藍 */
 
   /* 陰影與圓角 */
-  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 2px 8px rgba(74, 59, 50, 0.04);
+  --shadow-md: 0 10px 30px rgba(74, 59, 50, 0.08);
+  --shadow-lg: 0 20px 45px rgba(74, 59, 50, 0.12);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -56,15 +56,43 @@
 body {
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(26, 21, 56, 0.3) 0px, transparent 100%);
+    radial-gradient(at 0% 0%, rgba(178, 94, 43, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(211, 47, 47, 0.05) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(243, 237, 228, 0.5) 0px, transparent 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-primary);
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
+}
+
+/* 標誌圖片與連結樣式 */
+.logo-image-container {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 14px var(--color-primary-glow);
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.brand {
+  text-decoration: none !important;
+}
+
+.brand:hover .brand-text h2 {
+  color: var(--color-primary);
 }
 
 /* 網頁滾動條樣式 */
@@ -132,9 +160,8 @@ body {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: linear-gradient(to right, #ffffff, #e2e8f0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
+  transition: var(--transition-smooth);
 }
 
 .brand-text span {
@@ -171,15 +198,15 @@ body {
 }
 
 .nav-item:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-primary);
+  background: rgba(178, 94, 43, 0.06);
 }
 
 .nav-item.active {
   color: #fff;
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.05);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px var(--color-primary-glow);
 }
 
 .sidebar-footer {
@@ -246,9 +273,9 @@ body {
 .header-title h1 {
   font-family: var(--font-display);
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 4px;
-  background: linear-gradient(135deg, #ffffff, #cbd5e1);
+  background: linear-gradient(135deg, var(--text-primary), var(--color-primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -377,7 +404,7 @@ body {
 
 /* 下拉選單與輸入框 */
 .select-control {
-  background: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
   border: 1px solid var(--card-border);
   color: var(--text-primary);
   padding: 10px 16px;
@@ -390,7 +417,7 @@ body {
 
 .select-control:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-glow);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .select-control-sm {
@@ -401,7 +428,7 @@ body {
 
 .select-control-full {
   width: 100%;
-  background: rgba(18, 14, 40, 0.7);
+  background: #ffffff;
   border: 1px solid var(--card-border);
   color: var(--text-primary);
   padding: 10px 16px;
@@ -414,11 +441,11 @@ body {
 .select-control-full option,
 select option {
   background-color: #ffffff;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .form-control {
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
   border: 1px solid var(--card-border);
   color: var(--text-primary);
   padding: 12px 16px;
@@ -431,8 +458,8 @@ select option {
 
 .form-control:focus {
   border-color: var(--color-primary);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 2px var(--color-primary-glow);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .form-control-sm {
@@ -816,7 +843,7 @@ select option {
 
 .search-box input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-sm);
   padding: 8px 16px 8px 38px;
@@ -828,7 +855,7 @@ select option {
 
 .search-box input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-glow);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .filter-group {
@@ -848,25 +875,25 @@ select option {
 }
 
 .data-table th {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-secondary);
   color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 14px 24px;
-  border-bottom: 1px solid var(--card-border);
+  border-bottom: 2px solid var(--card-border);
 }
 
 .data-table td {
   padding: 14px 24px;
   font-size: 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(178, 94, 43, 0.08);
   color: var(--text-primary);
 }
 
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(178, 94, 43, 0.03);
 }
 
 .badge-row-type {
@@ -1159,34 +1186,187 @@ select option {
 .text-primary { color: var(--color-primary); }
 .text-expense { color: var(--color-expense); }
 
-/* RWD 回應式設計 */
+/* RWD 回應式設計與行動端介面優化 */
+
+/* 桌機端預設隱藏手機頂部欄 */
+.mobile-top-bar {
+  display: none;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(74, 59, 50, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 98;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @media (max-width: 768px) {
-  .app-container {
-    grid-template-columns: 1fr;
+  /* 手機頂部導覽欄 */
+  .mobile-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-sidebar);
+    border-bottom: 1px solid var(--card-border);
+    padding: 0 16px;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    height: 60px;
+    box-shadow: var(--shadow-sm);
   }
   
+  .hamburger-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-smooth);
+  }
+  
+  .hamburger-btn:hover {
+    background: rgba(178, 94, 43, 0.08);
+  }
+  
+  .hamburger-btn i {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+  }
+  
+  .mobile-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  
+  .mobile-sync-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-smooth);
+  }
+  
+  .mobile-sync-btn:hover {
+    background: rgba(178, 94, 43, 0.08);
+  }
+  
+  .mobile-sync-btn i {
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-container {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+  }
+  
+  /* 側邊選單 RWD (抽屜式 Menu) */
   .sidebar {
-    height: auto;
-    position: relative;
-    padding: 1.5rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+    background-color: var(--bg-sidebar);
+    padding: 2rem 1.5rem;
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
   }
   
   .brand {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
   
   .main-content {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
   
   .top-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 12px;
+    margin-bottom: 1.5rem;
   }
   
   .header-actions {
     width: 100%;
     justify-content: space-between;
+  }
+  
+  /* 行動端內嵌表單優化 (全螢幕效果) */
+  #tab-forms {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - 60px);
+    z-index: 90;
+    background: var(--bg-primary);
+  }
+  
+  #tab-forms .settings-card {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    height: 100% !important;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #tab-forms .settings-card > div:first-child {
+    padding: 10px 14px !important;
+    margin-bottom: 0 !important;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--card-border) !important;
+  }
+  
+  #tab-forms .iframe-wrapper {
+    height: 0;
+    flex-grow: 1;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100vw !important;
   }
 }

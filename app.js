@@ -488,6 +488,54 @@ function bindEvents() {
       alert('表單嵌入設定儲存成功！');
     });
   }
+
+  // 標誌連結點擊回到儀表板
+  const logoLink = document.getElementById('brand-logo-link');
+  if (logoLink) {
+    logoLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('dashboard');
+    });
+  }
+
+  // 手機版側邊欄抽屜切換
+  const hamburgerBtn = document.getElementById('btn-hamburger');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  
+  if (hamburgerBtn && sidebar && sidebarOverlay) {
+    hamburgerBtn.addEventListener('click', () => {
+      sidebar.classList.add('active');
+      sidebarOverlay.classList.add('active');
+      sidebarOverlay.style.display = 'block';
+    });
+    
+    const closeSidebar = () => {
+      sidebar.classList.remove('active');
+      sidebarOverlay.classList.remove('active');
+      setTimeout(() => {
+        if (!sidebarOverlay.classList.contains('active')) {
+          sidebarOverlay.style.display = 'none';
+        }
+      }, 300);
+    };
+    
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    
+    // 點擊任何導覽項目時自動關閉側邊欄抽屜
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', closeSidebar);
+    });
+  }
+  
+  // 手機版立即同步按鈕關聯
+  const mobileSyncBtn = document.getElementById('btn-mobile-sync');
+  const desktopSyncBtn = document.getElementById('btn-sync-now');
+  if (mobileSyncBtn && desktopSyncBtn) {
+    mobileSyncBtn.addEventListener('click', () => {
+      desktopSyncBtn.click();
+    });
+  }
 }
 
 // 切換 Tab
@@ -509,7 +557,7 @@ function switchTab(tabId) {
   });
 
   const titles = {
-    dashboard: { main: '樂肉家記帳決策儀表板', sub: '實時自動分類，追蹤全年度與月度的家庭收支' },
+    dashboard: { main: '樂肉家記帳系統', sub: '實時自動分類，追蹤全年度與月度的家庭收支' },
     transactions: { main: '歷史收支明細', sub: '搜尋、篩選與分析家庭所有的收支帳目' },
     forms: { main: '表單記帳', sub: '直接在網頁中填寫您的 Google 表單，資料將實時同步至試算表' },
     settings: { main: '資料與分頁設定', sub: '管理 Google Sheet 連線、分頁 GID 及設定成員欄位' }
@@ -1872,7 +1920,7 @@ function renderTrendChart() {
       dotSpan.style.alignItems = 'center';
       dotSpan.style.gap = '4px';
       dotSpan.style.fontSize = '11px';
-      dotSpan.style.color = '#cbd5e1';
+      dotSpan.style.color = '#7c6a5e';
       dotSpan.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:${incomeColors[mem] || '#10b981'};"></span>${mem}`;
       incRow.appendChild(dotSpan);
     });
@@ -1896,7 +1944,7 @@ function renderTrendChart() {
       dotSpan.style.alignItems = 'center';
       dotSpan.style.gap = '4px';
       dotSpan.style.fontSize = '11px';
-      dotSpan.style.color = '#cbd5e1';
+      dotSpan.style.color = '#7c6a5e';
       dotSpan.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:${expenseColors[mem] || '#f43f5e'};"></span>${mem}`;
       expRow.appendChild(dotSpan);
     });
@@ -1919,7 +1967,7 @@ function renderTrendChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(18, 14, 40, 0.95)',
+          backgroundColor: 'rgba(74, 59, 50, 0.95)',
           padding: 12,
           callbacks: {
             label: function(context) {
@@ -1932,13 +1980,13 @@ function renderTrendChart() {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }
+          ticks: { color: '#7c6a5e', font: { family: 'Inter', size: 10 } }
         },
         y: {
           stacked: true,
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          grid: { color: 'rgba(74, 59, 50, 0.08)' },
           ticks: { 
-            color: '#94a3b8',
+            color: '#7c6a5e',
             font: { family: 'Inter', size: 10 },
             callback: function(value) {
               return value >= 1000 ? (value / 1000) + 'k' : value;
@@ -1992,7 +2040,7 @@ function renderCategoryChart() {
         labels: [noDataLabel],
         datasets: [{
           data: [1],
-          backgroundColor: ['rgba(255,255,255,0.06)'],
+          backgroundColor: ['rgba(74, 59, 50, 0.06)'],
           borderWidth: 0
         }]
       },
@@ -2001,7 +2049,7 @@ function renderCategoryChart() {
         maintainAspectRatio: false,
         cutout: '70%',
         plugins: {
-          legend: { display: true, position: 'bottom', labels: { color: '#94a3b8' } }
+          legend: { display: true, position: 'bottom', labels: { color: '#7c6a5e' } }
         }
       }
     });
@@ -2016,7 +2064,7 @@ function renderCategoryChart() {
         data: dataValues,
         backgroundColor: categoryColors.slice(0, sortedKeys.length),
         borderWidth: 2,
-        borderColor: '#0a071a',
+        borderColor: '#ffffff',
         hoverOffset: 6
       }]
     },
@@ -2028,14 +2076,14 @@ function renderCategoryChart() {
         legend: {
           position: 'bottom',
           labels: {
-            color: '#cbd5e1',
+            color: '#4a3b32',
             boxWidth: 10,
             padding: 8,
             font: { family: 'Inter', size: 10 }
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(18, 14, 40, 0.95)',
+          backgroundColor: 'rgba(74, 59, 50, 0.95)',
           padding: 12,
           callbacks: {
             label: function(context) {

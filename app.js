@@ -61,7 +61,7 @@ const state = {
   
   // 篩選與檢討週期
   reviewCycle: 'month', // 'month' (月度檢討) 或 'year' (年度檢討)
-  filterPeriod: 'all',  // 具體時間，如 '2026-06' 或 '2026' 或 'all'
+  filterPeriod: '',  // 預設為空，由程式在載入資料後自動選取最新有資料的月份
   filterMember: 'all',  // 家庭成員篩選
   
   // 圖表顯示模式：'category' (按類別) 或 'member' (按成員)
@@ -716,8 +716,8 @@ function fetchSheetData(fromModal = false) {
       return;
     }
 
-    const expenseUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${expenseGid}`;
-    const incomeUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${incomeGid}`;
+    const expenseUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${expenseGid}`;
+    const incomeUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${incomeGid}`;
 
     Promise.all([
       fetch(expenseUrl).then(r => {
@@ -779,7 +779,7 @@ function fetchSheetData(fromModal = false) {
   } else {
     // 單一分頁模式：僅拉取單一 GID
     const singleGid = state.singleGid || '0';
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${singleGid}`;
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${singleGid}`;
     
     fetch(csvUrl)
       .then(response => {
@@ -1117,9 +1117,8 @@ function populatePeriodFilter() {
   }
 
   // 嘗試還原先前選取的期間，或預設選取最新一個有資料的區間
-  if (periods.includes(currentVal) || currentVal === 'all') {
-    filter.value = currentVal;
-    state.filterPeriod = currentVal;
+  if (state.filterPeriod && (periods.includes(state.filterPeriod) || state.filterPeriod === 'all')) {
+    filter.value = state.filterPeriod;
   } else {
     if (periods.length > 0) {
       filter.value = periods[0];

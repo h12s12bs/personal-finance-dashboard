@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>樂肉家記帳決策儀表板 | Family Finance Dashboard</title>
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Chart.js for beautiful charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- PapaParse for parsing CSV data -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  
+  <!-- CryptoJS for secure config encryption -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- Onscreen Debug Console for remote browser testing -->
+  <div id="debug-log-console" style="position: fixed; bottom: 16px; right: 16px; max-height: 200px; overflow-y: auto; background: rgba(10, 5, 25, 0.95); color: #f43f5e; font-family: monospace; font-size: 11px; z-index: 99999; padding: 12px; border-radius: var(--radius-sm); display: none; max-width: 420px; border: 1px solid rgba(244, 63, 94, 0.4); box-shadow: var(--shadow-lg); backdrop-filter: blur(10px);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+      <strong style="color: #fda4af;">⚠️ 系統錯誤日誌 (Debug Console)</strong>
+      <button onclick="document.getElementById('debug-log-console').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 12px; font-weight: bold;">關閉</button>
+    </div>
+    <div id="debug-log-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+  </div>
+  <script>
+    window.addEventListener('error', function(e) {
+      var consoleDiv = document.getElementById('debug-log-console');
+      var listDiv = document.getElementById('debug-log-list');
+      if (consoleDiv && listDiv) {
+        consoleDiv.style.display = 'block';
+        var item = document.createElement('div');
+        item.style.borderBottom = '1px dashed rgba(255,255,255,0.05)';
+        item.style.paddingBottom = '4px';
+        item.style.wordBreak = 'break-all';
+        item.innerHTML = '<strong>錯誤:</strong> ' + e.message + '<br><span style="color: #94a3b8;">於行號 ' + e.lineno + ' (' + e.filename.split('/').pop() + ')</span>';
+        listDiv.appendChild(item);
+      }
+    });
+  </script>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <i data-lucide="wallet"></i>
+        </div>
+        <div class="brand-text">
+          <h2>樂肉家記帳</h2>
+          <span>Family Finance Flow</span>
+        </div>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>儀表板</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="transactions">
+          <i data-lucide="list-ordered"></i>
+          <span>交易明細</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="settings">
+          <i data-lucide="settings"></i>
+          <span>資料設定</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="status-indicator online" id="sync-status-indicator">
+          <span class="dot"></span>
+          <span class="status-text" id="sync-status-text">載入中...</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-sync-now">
+          <i data-lucide="refresh-cw"></i>
+          <span>立即同步</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top header -->
+      <header class="top-header">
+        <div class="header-title">
+          <h1 id="page-title">樂肉家記帳決策儀表板</h1>
+          <p class="subtitle" id="page-subtitle">實時自動分類，追蹤全年度與月度的家庭收支</p>
+        </div>
+        
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" id="btn-open-config">
+            <i data-lucide="database"></i>
+            <span>連接 Google Sheet</span>
+          </button>
+          
+          <div class="filter-controls">
+            <!-- Family Member Selector -->
+            <select id="filter-member" class="select-control select-control-sm" title="篩選成員">
+              <option value="all">所有成員</option>
+            </select>
+
+            <!-- Review Cycle Selector (Monthly or Yearly) -->
+            <select id="filter-cycle" class="select-control select-control-sm" title="檢討維度">
+              <option value="month">月度檢討</option>
+              <option value="year">年度檢討</option>
+            </select>
+
+            <!-- Dynamic Period Selector (Specific month or specific year) -->
+            <select id="filter-period" class="select-control select-control-sm" title="選擇時間區間">
+              <option value="all">所有時間</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Container -->
+      <div class="content-body">
+        
+        <!-- Tab 1: Dashboard View -->
+        <section id="tab-dashboard" class="tab-content active">
+          
+          <!-- Stat Cards Row -->
+          <div class="stats-grid">
+            <div class="stat-card total-income-card">
+              <div class="card-glow"></div>
+              <div class="card-icon">
+                <i data-lucide="trending-up"></i>
+              </div>
+              <div class="card-info">
+                <span id="label-total-income">總收入</span>
+                <h3 id="stat-total-income">NT$ 0</h3>
+                <span class="trend-indicator up" id="income-change-pct">
+                  <i data-lucide="arrow-up-right"></i>
+                  <span>0%</span>
+                </span>
+              </div>
+            </div>
+            
+            <div class="stat-card total-expense-card">
+              <div class="card-glow"></div>
+              <div class="card-icon">
+                <i data-lucide="trending-down"></i>
+              </div>
+              <div class="card-info">
+                <span id="label-total-expense">總支出</span>
+                <h3 id="stat-total-expense">NT$ 0</h3>
+                <span class="trend-indicator down" id="expense-change-pct">
+                  <i data-lucide="arrow-down-right"></i>
+                  <span>0%</span>
+                </span>
+              </div>
+            </div>
+            
+            <div class="stat-card total-balance-card">
+              <div class="card-glow"></div>
+              <div class="card-icon">
+                <i data-lucide="scale"></i>
+              </div>
+              <div class="card-info">
+                <span id="label-total-balance">淨儲蓄 (餘額)</span>
+                <h3 id="stat-total-balance">NT$ 0</h3>
+                <span class="trend-indicator" id="balance-pct-info">
+                  <i data-lucide="percent"></i>
+                  <span id="savings-rate-text">儲蓄率 0%</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div class="charts-grid">
+            <!-- Income vs Expense Monthly Trend (will display stacked bars by family member) -->
+            <div class="chart-card large-chart">
+              <div class="chart-header">
+                <h3 id="trend-chart-title">收支趨勢分析 (按月)</h3>
+                <div class="chart-actions">
+                  <span class="badge badge-income">收入</span>
+                  <span class="badge badge-expense">支出</span>
+                </div>
+              </div>
+              <div class="chart-body">
+                <canvas id="trendChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Distribution Chart (Switches between Category & Member) -->
+            <div class="chart-card">
+              <div class="chart-header">
+                <h3 id="distribution-chart-title">支出結構佔比</h3>
+                <div class="chart-toggle-buttons">
+                  <button class="btn btn-secondary btn-xs active" id="btn-chart-by-category">支出類別</button>
+                  <button class="btn btn-secondary btn-xs" id="btn-chart-by-member">支出成員</button>
+                  <button class="btn btn-secondary btn-xs" id="btn-chart-by-source">收入來源</button>
+                </div>
+              </div>
+              <div class="chart-body doughnut-body">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Insights & Target -->
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="card-header-clean">
+                <i data-lucide="sparkles" class="text-warning"></i>
+                <h3>智能財務與家庭洞察</h3>
+              </div>
+              <div class="insight-list" id="insight-container">
+                <div class="insight-item">
+                  <span class="insight-bullet bullet-info"></span>
+                  <p>載入資料中，稍後將為您分析最主要的支出類別、成員花費與收支結構...</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <div class="card-header-clean">
+                <i data-lucide="target" class="text-primary"></i>
+                <h3>儲蓄進度與預算指標</h3>
+              </div>
+              <div class="budget-progress-container">
+                <div class="budget-metric">
+                  <div class="metric-label">
+                    <span>月度家庭總預算</span>
+                    <span id="budget-amount-text">NT$ 35,000</span>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" id="budget-progress-bar" style="width: 0%"></div>
+                  </div>
+                  <div class="metric-info" id="budget-warning-text">
+                    正在計算本月已花費預算比...
+                  </div>
+                </div>
+                
+                <div class="budget-metric">
+                  <div class="metric-label">
+                    <span>年度儲蓄目標進度</span>
+                    <span id="savings-progress-text">NT$ 0 / NT$ 200,000</span>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill progress-savings" id="savings-progress-bar" style="width: 0%"></div>
+                  </div>
+                  <div class="metric-info" id="savings-info-text">
+                    已達成目標的 0%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </section>
+
+        <!-- Tab 2: Transactions List View -->
+        <section id="tab-transactions" class="tab-content">
+          <div class="data-table-card">
+            <div class="table-header-toolbar">
+              <div class="search-box">
+                <i data-lucide="search"></i>
+                <input type="text" id="table-search" placeholder="搜尋項目、類別、備註、成員、日期...">
+              </div>
+              <div class="filter-group">
+                <select id="filter-table-member" class="select-control">
+                  <option value="all">所有成員</option>
+                </select>
+                <select id="filter-table-type" class="select-control">
+                  <option value="all">所有收支</option>
+                  <option value="支出">僅看支出</option>
+                  <option value="收入">僅看收入</option>
+                </select>
+                <select id="filter-table-category" class="select-control">
+                  <option value="all">所有類別</option>
+                </select>
+                <button class="btn btn-secondary" id="btn-export-csv">
+                  <i data-lucide="download"></i>
+                  <span>匯出資料</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="data-table" id="transactions-table">
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>成員</th>
+                    <th>收支</th>
+                    <th>類別 / 來源</th>
+                    <th>金額</th>
+                    <th>項目 / 備註</th>
+                  </tr>
+                </thead>
+                <tbody id="table-body">
+                  <tr>
+                    <td colspan="6" class="text-center py-8">
+                      <div class="loading-spinner-inline"></div>
+                      <p class="text-muted mt-2">載入明細中...</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-pagination">
+              <div class="pagination-info">
+                顯示第 <span id="pag-start">0</span> 到 <span id="pag-end">0</span> 筆，共 <span id="pag-total">0</span> 筆
+              </div>
+              <div class="pagination-controls">
+                <button class="btn btn-icon btn-sm" id="btn-pag-prev"><i data-lucide="chevron-left"></i></button>
+                <span class="pagination-page" id="pag-current">1 / 1</span>
+                <button class="btn btn-icon btn-sm" id="btn-pag-next"><i data-lucide="chevron-right"></i></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 3: Configuration & Manual Settings -->
+        <section id="tab-settings" class="tab-content">
+          <div class="settings-container-box">
+            
+            <!-- Google Sheets Connection Settings -->
+            <div class="settings-card">
+              <h3><i data-lucide="link"></i> Google Sheets 連線設定</h3>
+              <p class="text-muted text-sm mb-6">設定從 Google 試算表實時撈取資料。系統將自動讀取時間戳記，並動態劃分年度與月份，無須按年分開設定。</p>
+              
+              <div class="form-group">
+                <label for="input-sheet-url">Google Sheet 共用網址 (或試算表 ID)</label>
+                <input type="text" id="input-sheet-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/your-spreadsheet-id/edit?usp=sharing">
+                <small class="form-help">
+                  請確保試算表已開啟共用設定：點擊右上角「共用」-> 將一般存取權設為<strong>「知道連結的任何人」都可以檢視</strong>。
+                </small>
+              </div>
+
+              <!-- Sheet Mode Selection (Separate or Combined) -->
+              <div class="form-group">
+                <label>工作表資料記錄模式</label>
+                <div class="type-define-row">
+                  <label class="radio-label mr-4" style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="radio" name="setting-sheet-mode" value="separate" checked> 
+                    <span>收支分開在不同工作分頁 (例如一個是支出表，另一個是收入表)</span>
+                  </label>
+                  <label class="radio-label" style="cursor: pointer; display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                    <input type="radio" name="setting-sheet-mode" value="combined"> 
+                    <span>收支記錄在同一個工作分頁 (使用一個「收支類型」欄位區分)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- GID inputs configuration based on mode -->
+              <div class="mapping-grid" id="gid-inputs-grid">
+                <!-- Separate mode GID inputs -->
+                <div class="form-group" id="container-expense-gid">
+                  <label for="input-expense-gid">支出分頁 GID (通常在網址結尾 gid=xxxx，第一個分頁通常為 0)</label>
+                  <input type="text" id="input-expense-gid" class="form-control" placeholder="0" value="0">
+                </div>
+                <div class="form-group" id="container-income-gid">
+                  <label for="input-income-gid">收入分頁 GID (通常在網址結尾 gid=xxxx)</label>
+                  <input type="text" id="input-income-gid" class="form-control" placeholder="請貼上收入分頁的 GID">
+                </div>
+                
+                <!-- Combined mode GID input -->
+                <div class="form-group" id="container-single-gid" style="display: none;">
+                  <label for="input-single-gid">工作表分頁 GID (通常為 0)</label>
+                  <input type="text" id="input-single-gid" class="form-control" placeholder="0" value="0">
+                </div>
+              </div>
+
+              <div class="settings-actions">
+                <button class="btn btn-primary" id="btn-save-settings">
+                  <i data-lucide="save"></i>
+                  <span>儲存設定並同步</span>
+                </button>
+                <button class="btn btn-secondary" id="btn-load-mock">
+                  <i data-lucide="database"></i>
+                  <span>載入樂肉家 Demo 資料</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Mapping configuration -->
+            <div class="settings-card" id="mapping-card" style="display: none;">
+              <h3><i data-lucide="git-merge"></i> 欄位對應設定 (Column Mapping)</h3>
+              <p class="text-muted text-sm mb-6">我們已讀取試算表欄位，請設定對應欄位，以便系統解析時間戳記進行自動年度/月份分類：</p>
+              
+              <!-- SECTION A: Separate Mode Mapping -->
+              <div id="mapping-separate-section">
+                <!-- Expense Mappings -->
+                <h4 class="mb-2" style="color: var(--color-expense);"><i data-lucide="trending-down"></i> 支出工作表欄位對應</h4>
+                <div class="mapping-grid mb-6">
+                  <div class="form-group">
+                    <label for="map-exp-date">日期/時間戳記欄位</label>
+                    <select id="map-exp-date" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-exp-member">人員/成員欄位</label>
+                    <select id="map-exp-member" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-exp-category">類別欄位 (例如：消費項目/類別)</label>
+                    <select id="map-exp-category" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-exp-amount">金額欄位</label>
+                    <select id="map-exp-amount" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-exp-remark">項目/備註欄位</label>
+                    <select id="map-exp-remark" class="form-control select-control-full"></select>
+                  </div>
+                </div>
+
+                <!-- Income Mappings -->
+                <h4 class="mb-2" style="color: var(--color-income);"><i data-lucide="trending-up"></i> 收入工作表欄位對應</h4>
+                <div class="mapping-grid mb-4">
+                  <div class="form-group">
+                    <label for="map-inc-date">日期/時間戳記欄位</label>
+                    <select id="map-inc-date" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-member">人員/成員欄位</label>
+                    <select id="map-inc-member" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-category">類別欄位 (例如：收入種類/項目)</label>
+                    <select id="map-inc-category" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-source">收入來源欄位</label>
+                    <select id="map-inc-source" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-amount">金額欄位</label>
+                    <select id="map-inc-amount" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-remark">項目/備註欄位</label>
+                    <select id="map-inc-remark" class="form-control select-control-full"></select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION B: Combined Mode Mapping -->
+              <div id="mapping-combined-section" style="display: none;">
+                <h4 class="mb-2" style="color: var(--color-primary);"><i data-lucide="scale"></i> 合併收支工作表欄位對應</h4>
+                <div class="mapping-grid">
+                  <div class="form-group">
+                    <label for="map-comb-date">日期/時間戳記欄位</label>
+                    <select id="map-comb-date" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-member">人員/成員欄位</label>
+                    <select id="map-comb-member" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-category">類別欄位</label>
+                    <select id="map-comb-category" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-source">收入來源欄位 (可與類別相同)</label>
+                    <select id="map-comb-source" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-amount">金額欄位</label>
+                    <select id="map-comb-amount" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-remark">項目/備註欄位</label>
+                    <select id="map-comb-remark" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-type">收支類型欄位 (用來區分收/支)</label>
+                    <select id="map-comb-type" class="form-control select-control-full"></select>
+                  </div>
+                </div>
+
+                <div class="form-group mt-4" id="container-type-match-values">
+                  <label>類型定義 (Type Values Matching)</label>
+                  <div class="type-define-row">
+                    <div class="type-input-group">
+                      <span>支出字眼代表：</span>
+                      <input type="text" id="val-match-expense" class="form-control form-control-sm" placeholder="支出" value="支出">
+                    </div>
+                    <div class="type-input-group">
+                      <span>收入字眼代表：</span>
+                      <input type="text" id="val-match-income" class="form-control form-control-sm" placeholder="收入" value="收入">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-actions mt-4">
+                <button class="btn btn-success" id="btn-save-mapping">
+                  <i data-lucide="check-circle2"></i>
+                  <span>套用欄位對應</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Budget settings -->
+            <div class="settings-card">
+              <h3><i data-lucide="sliders"></i> 預算與目標設定</h3>
+              <p class="text-muted text-sm mb-6">設定月度家庭總預算及年度儲蓄目標，以便在儀表板中顯示進度。</p>
+              
+              <div class="mapping-grid">
+                <div class="form-group">
+                  <label for="setting-monthly-budget">月度總預算 (NT$)</label>
+                  <input type="number" id="setting-monthly-budget" class="form-control" value="35000">
+                </div>
+                <div class="form-group">
+                  <label for="setting-annual-savings">年度儲蓄目標 (NT$)</label>
+                  <input type="number" id="setting-annual-savings" class="form-control" value="200000">
+                </div>
+              </div>
+
+              <div class="settings-actions">
+                <button class="btn btn-primary" id="btn-save-budget">
+                  <i data-lucide="save"></i>
+                  <span>儲存預算與目標</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Family Sharing Card -->
+            <div class="settings-card">
+              <h3><i data-lucide="share-2"></i> 家庭共享連結 (手機/跨裝置查看)</h3>
+              <p class="text-muted text-sm mb-4">產生一個專屬連結分享給其他家庭成員（例如透過 LINE 傳送到 iPhone 手機）。對方開啟後會自動套用您的所有連線與欄位對應設定，直接觀看儀表板，無須重新設定！</p>
+              
+              <!-- 密碼安全鎖設定 -->
+              <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 16px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="shield-check" style="color: #10b981; width: 20px; height: 20px;"></i>
+                    <h4 style="margin: 0; font-size: 15px; color: #f8fafc;">啟用網頁密碼安全鎖</h4>
+                  </div>
+                  <label class="switch-label" style="display: inline-flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="setting-use-password" style="width: 40px; height: 20px; accent-color: var(--color-primary);">
+                  </label>
+                </div>
+                <div id="password-input-group" style="display: none; transition: all 0.3s ease;">
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="setting-lock-password">設定解鎖密碼 (用於加密共用設定)</label>
+                    <input type="password" id="setting-lock-password" class="form-control" placeholder="請輸入自訂解鎖密碼...">
+                  </div>
+                  <small class="form-help" style="color: #94a3b8; display: block; line-height: 1.5;">
+                    💡 <strong>安全保護機制</strong>：啟用後，產生的共享連結中會包含<strong>加密後</strong>的連線資訊。任何人開啟網頁都必須輸入此密碼解密，否則完全無法取得您的 Google 試算表 ID。
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="input-share-link">專屬共享網址</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="input-share-link" class="form-control" readonly placeholder="點擊下方按鈕生成共享網址...">
+                  <button class="btn btn-primary" id="btn-copy-share-link" style="flex-shrink: 0; min-width: 110px;">
+                    <i data-lucide="copy"></i>
+                    <span>複製連結</span>
+                  </button>
+                </div>
+              </div>
+              
+              <small class="form-help" style="line-height: 1.6;">
+                💡 <strong>手機/外網查看指南：</strong><br>
+                1. <strong>局域網查看</strong>：確保手機與電腦連線至相同的 Wi-Fi，將網址中的 <code>localhost</code> 改為您電腦的區域 IP（如 <code>192.168.1.xxx</code>）後以手機開啟。<br>
+                2. <strong>雲端部署（推薦）</strong>：將此靜態專案（<code>index.html</code>, <code>styles.css</code>, <code>app.js</code>）免費上傳至 <strong>GitHub Pages</strong> 或 <strong>Vercel / Netlify</strong>，就能在任何地方用手機隨時查看，完全免費且安全（資料依然直接從瀏覽器下載自 Google，不經過第三方伺服器）！
+              </small>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Connection Modal Overlay -->
+  <div class="modal-overlay" id="config-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2><i data-lucide="database" class="text-primary"></i> 連接您的 Google Sheet</h2>
+        <button class="btn-close" id="btn-close-modal"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="max-height: 62vh; overflow-y: auto;">
+        <p class="mb-4">樂肉家記帳資料存放在您的 Google 雲端硬碟試算表中。請按以下步驟連接：</p>
+        
+        <ol class="step-list mb-4">
+          <li>
+            <strong>開啟試算表共用：</strong>
+            <p>在您的 Google 試算表右上角點選「共用」，將「一般存取權」改為「<strong>知道連結的任何人</strong>」，並將權限設為「<strong>檢視者</strong>」。</p>
+          </li>
+          <li>
+            <strong>複製網址：</strong>
+            <p>複製瀏覽器上方網址列的完整網址，例如：<br>
+            <code class="text-xs break-all">https://docs.google.com/spreadsheets/d/1XyZ.../edit?usp=sharing</code></p>
+          </li>
+        </ol>
+
+        <!-- Connection Wizard Parameters in Modal -->
+        <div class="form-group">
+          <label for="modal-input-url">Google Sheet 網址</label>
+          <input type="text" id="modal-input-url" class="form-control" placeholder="請貼上共用網址...">
+        </div>
+
+        <div class="form-group">
+          <label>工作表資料記錄模式</label>
+          <div class="type-define-row" style="padding: 10px; font-size: 13px; margin-bottom: 8px;">
+            <label class="radio-label" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="modal-sheet-mode" value="separate" checked> 
+              <span>收支分開在不同工作分頁</span>
+            </label>
+            <label class="radio-label" style="display:flex; align-items:center; gap:6px; cursor:pointer; margin-top:6px;">
+              <input type="radio" name="modal-sheet-mode" value="combined"> 
+              <span>收支記錄在同一個工作分頁</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mapping-grid" id="modal-gid-grid" style="margin-bottom: 8px;">
+          <div class="form-group" id="modal-container-expense-gid">
+            <label for="modal-input-expense-gid">支出分頁 GID (通常為 0)</label>
+            <input type="text" id="modal-input-expense-gid" class="form-control form-control-sm" placeholder="0" value="0">
+          </div>
+          <div class="form-group" id="modal-container-income-gid">
+            <label for="modal-input-income-gid">收入分頁 GID (通常在網址結尾 gid=xxx)</label>
+            <input type="text" id="modal-input-income-gid" class="form-control form-control-sm" placeholder="請輸入收入分頁 GID">
+          </div>
+          <div class="form-group" id="modal-container-single-gid" style="display: none;">
+            <label for="modal-input-single-gid">工作表分頁 GID (通常為 0)</label>
+            <input type="text" id="modal-input-single-gid" class="form-control form-control-sm" placeholder="0" value="0">
+          </div>
+        </div>
+        
+        <div class="modal-error-msg" id="modal-error" style="display: none;">
+          無法讀取資料，請檢查網址與 GID 是否正確，且已開啟公開檢視。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-btn-demo">使用範例 Demo 資料</button>
+        <button class="btn btn-primary" id="modal-btn-connect">
+          <i data-lucide="link-2"></i>
+          <span>開始連接並分析</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Lock Overlay -->
+  <div class="modal-overlay" id="password-lock-overlay" style="display: none; z-index: 100000; background: radial-gradient(circle at center, #1e1b4b, #090514); align-items: center; justify-content: center;">
+    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 40px 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid rgba(99, 102, 241, 0.2); backdrop-filter: blur(20px);">
+      <div style="margin-bottom: 24px;">
+        <div style="width: 64px; height: 64px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <i data-lucide="lock" style="width: 32px; height: 32px; color: #818cf8;"></i>
+        </div>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 24px; color: #f8fafc; margin-bottom: 8px;">樂肉家記帳決策儀表板</h2>
+        <p style="color: #94a3b8; font-size: 14px;">此儀表板已受密碼保護，請輸入解鎖密碼以觀看內容。</p>
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 20px;">
+        <input type="password" id="input-lock-password" class="form-control" placeholder="請輸入密碼..." style="text-align: center; font-size: 18px; letter-spacing: 4px; padding: 12px;">
+      </div>
+      
+      <div id="lock-error-msg" style="color: #f43f5e; font-size: 13px; margin-bottom: 20px; display: none;">
+        ⚠️ 密碼錯誤，請重新輸入！
+      </div>
+      
+      <button class="btn btn-primary" id="btn-unlock-dashboard" style="width: 100%; padding: 12px; font-size: 15px;">
+        <i data-lucide="unlock"></i>
+        <span>解鎖儀表板</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Cache busted script load -->
+  <script src="app.js?v=11"></script>
+</body>
+</html>

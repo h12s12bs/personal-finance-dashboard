@@ -21,6 +21,8 @@ function logErrorToConsole(message, source = '系統') {
 // 1. 全域狀態管理 (State)
 const state = {
   sheetUrl: '',
+  expenseFormUrl: '',
+  incomeFormUrl: '',
   // 記帳模式：
   // 'separate': 收支分開在不同工作分頁 (需要填入兩個 GID：支出 GID & 收入 GID)
   // 'combined': 收支記錄在同一個工作分頁 (僅需一個分頁 GID 加上「收支類型」對應)
@@ -430,6 +432,50 @@ function bindEvents() {
     // 發起抓取，並傳入 fromModal = true
     fetchSheetData(true);
   });
+
+  // 表單切換與重整按鈕事件
+  const expFormBtn = document.getElementById('btn-show-expense-form');
+  const incFormBtn = document.getElementById('btn-show-income-form');
+  
+  if (expFormBtn) {
+    expFormBtn.addEventListener('click', () => {
+      expFormBtn.classList.add('active');
+      if (incFormBtn) incFormBtn.classList.remove('active');
+      updateEmbeddedForms();
+    });
+  }
+  
+  if (incFormBtn) {
+    incFormBtn.addEventListener('click', () => {
+      incFormBtn.classList.add('active');
+      if (expFormBtn) expFormBtn.classList.remove('active');
+      updateEmbeddedForms();
+    });
+  }
+  
+  const refreshFormBtn = document.getElementById('btn-refresh-form');
+  if (refreshFormBtn) {
+    refreshFormBtn.addEventListener('click', () => {
+      const expenseIframe = document.getElementById('expense-form-iframe');
+      const incomeIframe = document.getElementById('income-form-iframe');
+      if (expFormBtn && expFormBtn.classList.contains('active') && expenseIframe && state.expenseFormUrl) {
+        expenseIframe.src = state.expenseFormUrl;
+      } else if (incomeIframe && state.incomeFormUrl) {
+        incomeIframe.src = state.incomeFormUrl;
+      }
+    });
+  }
+  
+  const saveFormsBtn = document.getElementById('btn-save-forms');
+  if (saveFormsBtn) {
+    saveFormsBtn.addEventListener('click', () => {
+      state.expenseFormUrl = document.getElementById('input-expense-form-url').value.trim();
+      state.incomeFormUrl = document.getElementById('input-income-form-url').value.trim();
+      saveSettingsToStorage();
+      updateEmbeddedForms();
+      alert('表單嵌入設定儲存成功！');
+    });
+  }
 }
 
 // 切換 Tab
@@ -453,6 +499,7 @@ function switchTab(tabId) {
   const titles = {
     dashboard: { main: '樂肉家記帳決策儀表板', sub: '實時自動分類，追蹤全年度與月度的家庭收支' },
     transactions: { main: '歷史收支明細', sub: '搜尋、篩選與分析家庭所有的收支帳目' },
+    forms: { main: '表單記帳', sub: '直接在網頁中填寫您的 Google 表單，資料將實時同步至試算表' },
     settings: { main: '資料與分頁設定', sub: '管理 Google Sheet 連線、分頁 GID 及設定成員欄位' }
   };
 
@@ -544,6 +591,8 @@ function loadSettingsFromStorage() {
       state.lockPassword = config.lockPassword || '';
       state.adminPassword = config.adminPassword || '';
       state.adminPasswordHash = config.adminPasswordHash || '';
+      state.expenseFormUrl = config.expenseFormUrl || '';
+      state.incomeFormUrl = config.incomeFormUrl || '';
       
       // 載入管理員權限
       state.isAdmin = config.isAdmin !== false;
@@ -557,6 +606,11 @@ function loadSettingsFromStorage() {
       document.getElementById('input-expense-gid').value = state.expenseGid;
       document.getElementById('input-income-gid').value = state.incomeGid;
       document.getElementById('input-single-gid').value = state.singleGid;
+      
+      const expFormInput = document.getElementById('input-expense-form-url');
+      if (expFormInput) expFormInput.value = state.expenseFormUrl;
+      const incFormInput = document.getElementById('input-income-form-url');
+      if (incFormInput) incFormInput.value = state.incomeFormUrl;
       
       document.getElementById('setting-monthly-budget').value = state.monthlyBudget;
       document.getElementById('setting-annual-savings').value = state.annualSavingsGoal;
@@ -586,6 +640,7 @@ function loadSettingsFromStorage() {
 
       applyAdminAccess();
       updateSettingsFormLayout();
+      updateEmbeddedForms();
     } catch (e) {
       console.error('解析儲存的設定失敗', e);
     }
@@ -608,6 +663,8 @@ function saveSettingsToStorage() {
     expenseGid: state.expenseGid,
     incomeGid: state.incomeGid,
     singleGid: state.singleGid,
+    expenseFormUrl: state.expenseFormUrl,
+    incomeFormUrl: state.incomeFormUrl,
     mapping: state.mapping,
     matchExpense: state.matchExpense,
     matchIncome: state.matchIncome,
@@ -634,6 +691,8 @@ function compressConfig(config) {
     eg: config.expenseGid || '0',
     ig: config.incomeGid || '',
     sg: config.singleGid || '0',
+    ef: config.expenseFormUrl || '',
+    if: config.incomeFormUrl || '',
     me: config.matchExpense || '支出',
     mi: config.matchIncome || '收入',
     mb: config.monthlyBudget || 35000,
@@ -685,6 +744,8 @@ function decompressConfig(short) {
     expenseGid: short.eg || '0',
     incomeGid: short.ig || '',
     singleGid: short.sg || '0',
+    expenseFormUrl: short.ef || '',
+    incomeFormUrl: short.if || '',
     matchExpense: short.me || '支出',
     matchIncome: short.mi || '收入',
     monthlyBudget: Number(short.mb) || 35000,
@@ -2441,4 +2502,51 @@ function loadMockData(isFallback = false) {
   document.getElementById('mapping-card').style.display = 'none';
 
   processAndRenderData();
+}
+
+// 13. Google 表單嵌入邏輯
+function updateEmbeddedForms() {
+  const expenseIframe = document.getElementById('expense-form-iframe');
+  const incomeIframe = document.getElementById('income-form-iframe');
+  const placeholder = document.getElementById('forms-placeholder');
+  
+  if (state.expenseFormUrl || state.incomeFormUrl) {
+    if (placeholder) placeholder.style.display = 'none';
+    
+    // 若網址變動則更新 src
+    if (expenseIframe && state.expenseFormUrl && expenseIframe.src !== state.expenseFormUrl) {
+      expenseIframe.src = state.expenseFormUrl;
+    }
+    if (incomeIframe && state.incomeFormUrl && incomeIframe.src !== state.incomeFormUrl) {
+      incomeIframe.src = state.incomeFormUrl;
+    }
+    
+    // 根據目前的選單按鈕決定顯示哪一個 iframe
+    const expBtn = document.getElementById('btn-show-expense-form');
+    if (expBtn && expBtn.classList.contains('active')) {
+      if (expenseIframe) expenseIframe.style.display = state.expenseFormUrl ? 'block' : 'none';
+      if (incomeIframe) incomeIframe.style.display = 'none';
+      if (!state.expenseFormUrl && placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `<i data-lucide="form-input" style="width: 48px; height: 48px; color: var(--color-primary); margin-bottom: 12px;"></i><p>尚未設定支出表單網址。</p>`;
+        lucide.createIcons();
+      }
+    } else {
+      if (expenseIframe) expenseIframe.style.display = 'none';
+      if (incomeIframe) incomeIframe.style.display = state.incomeFormUrl ? 'block' : 'none';
+      if (!state.incomeFormUrl && placeholder) {
+        placeholder.style.display = 'flex';
+        placeholder.innerHTML = `<i data-lucide="form-input" style="width: 48px; height: 48px; color: var(--color-primary); margin-bottom: 12px;"></i><p>尚未設定收入表單網址。</p>`;
+        lucide.createIcons();
+      }
+    }
+  } else {
+    if (expenseIframe) expenseIframe.style.display = 'none';
+    if (incomeIframe) incomeIframe.style.display = 'none';
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+      placeholder.innerHTML = `<i data-lucide="form-input" style="width: 48px; height: 48px; color: var(--color-primary); margin-bottom: 12px;"></i><p>尚未設定 Google 表單嵌入網址。</p><p class="text-xs text-muted mt-2">請由管理員至「資料設定」分頁設定支出與收入表單網址。</p>`;
+      lucide.createIcons();
+    }
+  }
 }

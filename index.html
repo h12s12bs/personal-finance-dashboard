@@ -73,6 +73,10 @@
           <i data-lucide="list-ordered"></i>
           <span>交易明細</span>
         </a>
+        <a href="#" class="nav-item" data-tab="forms" id="nav-item-forms">
+          <i data-lucide="edit-3"></i>
+          <span>表單記帳</span>
+        </a>
         <a href="#" class="nav-item" data-tab="settings">
           <i data-lucide="settings"></i>
           <span>資料設定</span>
@@ -334,6 +338,32 @@
           </div>
         </section>
 
+        <!-- Tab 4: Embedded Google Forms -->
+        <section id="tab-forms" class="tab-content">
+          <div class="settings-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; margin-bottom: 16px;">
+              <div class="chart-toggle-buttons" style="margin-bottom: 0;">
+                <button class="btn btn-secondary btn-sm active" id="btn-show-expense-form">支出記帳表單</button>
+                <button class="btn btn-secondary btn-sm" id="btn-show-income-form">收入記帳表單</button>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-form">
+                <i data-lucide="refresh-cw"></i>
+                <span>重新整理表單</span>
+              </button>
+            </div>
+            
+            <div class="iframe-wrapper" style="width: 100%; height: 75vh; border-radius: var(--radius-md); overflow: hidden; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border);">
+              <div id="forms-placeholder" class="text-center py-8 text-secondary" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px;">
+                <i data-lucide="form-input" style="width: 48px; height: 48px; color: var(--color-primary);"></i>
+                <p style="font-weight: 500;">尚未設定 Google 表單嵌入網址。</p>
+                <p class="text-xs text-muted">請由管理員至「資料設定」分頁設定支出與收入表單網址。</p>
+              </div>
+              <iframe id="expense-form-iframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+              <iframe id="income-form-iframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+            </div>
+          </div>
+        </section>
+
         <!-- Tab 3: Configuration & Manual Settings -->
         <section id="tab-settings" class="tab-content">
           <div class="settings-container-box">
@@ -393,6 +423,33 @@
                 <button class="btn btn-secondary" id="btn-load-mock">
                   <i data-lucide="database"></i>
                   <span>載入樂肉家 Demo 資料</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Google Forms Embed Card -->
+            <div class="settings-card">
+              <h3><i data-lucide="form-input" style="color: var(--color-primary);"></i> Google 表單嵌入設定</h3>
+              <p class="text-muted text-sm mb-6">將您的 Google 記帳表單直接嵌入至此網頁，方便家人在同一個頁面完成記帳與檢視。</p>
+              
+              <div class="mapping-grid">
+                <div class="form-group">
+                  <label for="input-expense-form-url">支出表單連結 (Google Form Embedded URL)</label>
+                  <input type="text" id="input-expense-form-url" class="form-control" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
+                </div>
+                <div class="form-group">
+                  <label for="input-income-form-url">收入表單連結 (Google Form Embedded URL)</label>
+                  <input type="text" id="input-income-form-url" class="form-control" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
+                </div>
+              </div>
+              <small class="form-help" style="color: #94a3b8; display: block; line-height: 1.5; margin-top: 12px;">
+                💡 <strong>如何取得嵌入連結</strong>：開啟您的 Google 表單 -> 點擊右上角「傳送」 -> 點選「嵌入 HTML」(&lt;&gt;) -> 複製裡面的 <code>src</code> 網址（僅需 https 開頭至 viewform?embedded=true 部份）。
+              </small>
+              
+              <div class="settings-actions">
+                <button class="btn btn-primary" id="btn-save-forms">
+                  <i data-lucide="save"></i>
+                  <span>儲存表單設定</span>
                 </button>
               </div>
             </div>
@@ -694,6 +751,6 @@
   </div>
 
   <!-- Cache busted script load -->
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

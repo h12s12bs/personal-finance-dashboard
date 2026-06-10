@@ -707,6 +707,27 @@ function generateShareLink() {
   }
 }
 
+function safeDecodeBase64(base64Str) {
+  if (!base64Str) return '';
+  try {
+    // 1. 嘗試標準相容 UTF-8 的百分比解碼
+    return decodeURIComponent(atob(base64Str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  } catch (e) {
+    try {
+      // 2. 嘗試傳統 escape/unescape 解碼
+      return decodeURIComponent(escape(window.atob(base64Str)));
+    } catch (e2) {
+      try {
+        // 3. 嘗試最純粹的 ASCII atob 解碼
+        return window.atob(base64Str);
+      } catch (e3) {
+        console.error('Base64 解碼失敗', e3);
+        return '';
+      }
+    }
+  }
+}
+
 function parseSharedUrlConfig() {
   const urlParams = new URLSearchParams(window.location.search);
   const configParam = urlParams.get('config');
@@ -715,8 +736,8 @@ function parseSharedUrlConfig() {
 
   if (configParam) {
     try {
-      // 解碼相容 UTF-8 的 Base64 字串
-      const jsonStr = decodeURIComponent(atob(configParam).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      // 使用相容性極高的解碼器
+      const jsonStr = safeDecodeBase64(configParam);
       const short = JSON.parse(jsonStr);
       const config = decompressConfig(short);
       if (config && config.sheetUrl) {

@@ -377,11 +377,18 @@ function bindEvents() {
       
       const trimmedPwd = pwd.trim();
       const inputHash = CryptoJS.SHA256(trimmedPwd).toString();
-      const targetHash = state.adminPasswordHash || (state.lockPassword ? CryptoJS.SHA256(state.lockPassword).toString() : '');
       
-      const isMatch = (targetHash && inputHash === targetHash) || 
-                      (state.adminPassword && trimmedPwd === state.adminPassword) || 
-                      (state.lockPassword && trimmedPwd === state.lockPassword);
+      let isMatch = false;
+      if (state.adminPasswordHash) {
+        // A. 如果有設定管理員密碼雜湊，則必須比對該雜湊
+        isMatch = (inputHash === state.adminPasswordHash);
+      } else if (state.adminPassword) {
+        // B. 比對明文管理員密碼
+        isMatch = (trimmedPwd === state.adminPassword);
+      } else if (state.lockPassword) {
+        // C. 舊版相容：若完全沒有設定管理員密碼，退回到解鎖密碼
+        isMatch = (trimmedPwd === state.lockPassword);
+      }
       
       if (isMatch) {
         state.isAdmin = true;

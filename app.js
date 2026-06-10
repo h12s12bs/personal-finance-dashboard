@@ -332,6 +332,11 @@ function bindEvents() {
   if (adminPwdInput) {
     adminPwdInput.addEventListener('input', (e) => {
       state.adminPassword = e.target.value;
+      if (e.target.value === '') {
+        state.adminPasswordHash = '';
+      } else {
+        state.adminPasswordHash = CryptoJS.SHA256(e.target.value).toString();
+      }
       saveSettingsToStorage();
     });
   }
@@ -662,7 +667,8 @@ function loadSettingsFromStorage() {
 
 function saveSettingsToStorage() {
   const currentAdminPwd = state.adminPassword || state.lockPassword;
-  const adminPasswordHash = currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '';
+  const adminPasswordHash = state.adminPasswordHash || (currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '');
+  state.adminPasswordHash = adminPasswordHash;
 
   const config = {
     sheetUrl: state.sheetUrl,
@@ -689,8 +695,12 @@ function saveSettingsToStorage() {
 
 function compressConfig(config) {
   const sheetId = extractSpreadsheetId(config.sheetUrl) || config.sheetUrl;
-  const currentAdminPwd = config.adminPassword || config.lockPassword;
-  const adminPasswordHash = currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '';
+  
+  let adminPasswordHash = config.adminPasswordHash;
+  if (!adminPasswordHash) {
+    const currentAdminPwd = config.adminPassword || config.lockPassword;
+    adminPasswordHash = currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '';
+  }
 
   return {
     u: sheetId,
@@ -789,17 +799,23 @@ function decompressConfig(short) {
 }
 
 function generateShareLink() {
+  const currentAdminPwd = state.adminPassword || state.lockPassword;
+  const adminPasswordHash = state.adminPasswordHash || (currentAdminPwd ? CryptoJS.SHA256(currentAdminPwd).toString() : '');
+
   const config = {
     sheetUrl: state.sheetUrl,
     sheetMode: state.sheetMode,
     expenseGid: state.expenseGid,
     incomeGid: state.incomeGid,
     singleGid: state.singleGid,
+    expenseFormUrl: state.expenseFormUrl,
+    incomeFormUrl: state.incomeFormUrl,
     mapping: state.mapping,
     matchExpense: state.matchExpense,
     matchIncome: state.matchIncome,
     monthlyBudget: state.monthlyBudget,
     annualSavingsGoal: state.annualSavingsGoal,
+    adminPasswordHash: adminPasswordHash,
     isAdmin: false // 共享給家人的連結預設為唯讀模式（隱藏資料設定）
   };
   try {

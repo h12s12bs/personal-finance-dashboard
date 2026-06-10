@@ -648,7 +648,7 @@ select option {
 .chart-toggle-buttons {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-primary);
   padding: 2px;
   border-radius: 8px;
   border: 1px solid var(--card-border);
@@ -987,7 +987,7 @@ select option {
   font-size: 1rem;
   font-family: var(--font-display);
   color: var(--text-secondary);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 4px;
 }
 
@@ -995,7 +995,7 @@ select option {
   display: flex;
   gap: 12px;
   margin-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--card-border);
   padding-top: 1.25rem;
 }
 
@@ -1009,7 +1009,7 @@ select option {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-primary);
   padding: 12px;
   border-radius: var(--radius-sm);
   border: 1px dashed var(--card-border);
@@ -1040,7 +1040,7 @@ select option {
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-primary);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-sm);
 }

@@ -2,6 +2,22 @@
    樂肉家記帳決策儀表板 | 核心邏輯 app.js (全自動時間分類版)
    ========================================== */
 
+// 輔助錯誤日誌輸出
+function logErrorToConsole(message, source = '系統') {
+  console.error(`[${source}] ${message}`);
+  const consoleDiv = document.getElementById('debug-log-console');
+  const listDiv = document.getElementById('debug-log-list');
+  if (consoleDiv && listDiv) {
+    consoleDiv.style.display = 'block';
+    const item = document.createElement('div');
+    item.style.borderBottom = '1px dashed rgba(255,255,255,0.05)';
+    item.style.paddingBottom = '4px';
+    item.style.wordBreak = 'break-all';
+    item.innerHTML = `<strong>[${source}]:</strong> ${message}`;
+    listDiv.appendChild(item);
+  }
+}
+
 // 1. 全域狀態管理 (State)
 const state = {
   sheetUrl: '',
@@ -540,6 +556,7 @@ function loadSettingsFromStorage() {
       if (state.usePassword && sessionStorage.getItem('dashboard_session_unlocked') !== 'true') {
         state.isLocked = true;
         document.getElementById('password-lock-overlay').style.display = 'flex';
+        updateSyncStatus('loading', '安全鎖定中 (請解鎖)');
       }
 
       applyAdminAccess();
@@ -729,35 +746,61 @@ function safeDecodeBase64(base64Str) {
 }
 
 function parseSharedUrlConfig() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const configParam = urlParams.get('config');
-  const encryptedParam = urlParams.get('encrypted');
+  // 1. 從 URL 搜尋字串或 Hash 中解析參數 (防止 LINE 等通訊軟體重定向或雜湊影響)
+  let search = window.location.search;
+  if (!search && window.location.hash.includes('?')) {
+    search = window.location.hash.substring(window.location.hash.indexOf('?'));
+  }
+  const urlParams = new URLSearchParams(search);
+  
+  // 2. 處理並還原因為 URLSearchParams 自動將 + 轉為空白的 Base64 格式
+  let configParam = urlParams.get('config');
+  if (configParam) {
+    configParam = configParam.trim().replace(/ /g, '+');
+  }
+  
+  let encryptedParam = urlParams.get('encrypted');
+  if (encryptedParam) {
+    encryptedParam = encryptedParam.trim().replace(/ /g, '+');
+  } else {
+    // 3. Fallback: 嘗試自 sessionStorage 讀取先前儲存但尚未解密成功的密文，防止行動裝置重新整理時遺失
+    encryptedParam = sessionStorage.getItem('pending_encrypted_config');
+  }
+
   const baseUrl = window.location.href.split('?')[0].split('#')[0];
 
   if (configParam) {
     try {
-      // 使用相容性極高的解碼器
       const jsonStr = safeDecodeBase64(configParam);
+      if (!jsonStr) throw new Error('Base64 解碼為空');
       const short = JSON.parse(jsonStr);
       const config = decompressConfig(short);
       if (config && config.sheetUrl) {
         localStorage.setItem('finance_lerou_auto_config', JSON.stringify(config));
+        sessionStorage.removeItem('pending_encrypted_config'); // 清除可能的舊密文
         window.history.replaceState({}, document.title, baseUrl);
         return true;
+      } else {
+        throw new Error('設定格式無效');
       }
     } catch (e) {
       console.error('解析共享網址參數失敗', e);
+      logErrorToConsole(e.message, '共享網址解析');
+      alert('⚠️ 共享網址解析失敗：配置資料損毀或不完整。已為您載入模擬資料。');
     }
   } else if (encryptedParam) {
-    // 偵測到加密的共享設定，先鎖定頁面，儲存密文待使用者輸入密碼後解密
+    // 偵測到加密的共享設定，鎖定頁面，儲存密文
     state.isLocked = true;
-    state.encryptedConfig = decodeURIComponent(encryptedParam);
+    state.encryptedConfig = encryptedParam;
+    sessionStorage.setItem('pending_encrypted_config', encryptedParam);
     
     // 顯示密碼鎖定畫面
     const overlay = document.getElementById('password-lock-overlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) {
+      overlay.style.display = 'flex';
+    }
     
-    // 清除網址列參數避免重整覆蓋
+    // 清除網址列參數避免重新整理覆蓋
     window.history.replaceState({}, document.title, baseUrl);
     return true;
   }
@@ -786,7 +829,8 @@ function unlockDashboard(password) {
   if (state.encryptedConfig) {
     // 情況 A：開啟帶有加密的共享網址，嘗試解密
     try {
-      const bytes = CryptoJS.AES.decrypt(state.encryptedConfig, password);
+      const cleanCipher = state.encryptedConfig.trim().replace(/ /g, '+');
+      const bytes = CryptoJS.AES.decrypt(cleanCipher, password);
       const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
       if (!decryptedText) throw new Error('解密失敗，密碼錯誤');
       
@@ -800,6 +844,7 @@ function unlockDashboard(password) {
         
         // 標記此 Session 已解鎖
         sessionStorage.setItem('dashboard_session_unlocked', 'true');
+        sessionStorage.removeItem('pending_encrypted_config'); // 清除暫存密文
         
         state.isLocked = false;
         state.encryptedConfig = '';
@@ -817,6 +862,7 @@ function unlockDashboard(password) {
       }
     } catch (e) {
       console.error('解密失敗', e);
+      logErrorToConsole(e.message, '解鎖密碼');
       if (errDiv) errDiv.style.display = 'block';
       return false;
     }
@@ -893,16 +939,17 @@ function fetchSheetData(fromModal = false) {
       return;
     }
 
-    const expenseUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${expenseGid}`;
-    const incomeUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${incomeGid}`;
+    // 使用 Gviz 格式 (支援 CORS)
+    const expenseUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${expenseGid}`;
+    const incomeUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${incomeGid}`;
 
     Promise.all([
       fetch(expenseUrl).then(r => {
-        if (!r.ok) throw new Error('支出分頁下載失敗');
+        if (!r.ok) throw new Error(`支出分頁下載失敗 (HTTP ${r.status})`);
         return r.text();
       }),
       fetch(incomeUrl).then(r => {
-        if (!r.ok) throw new Error('收入分頁下載失敗');
+        if (!r.ok) throw new Error(`收入分頁下載失敗 (HTTP ${r.status})`);
         return r.text();
       })
     ])
@@ -915,8 +962,8 @@ function fetchSheetData(fromModal = false) {
             header: true,
             skipEmptyLines: true,
             complete: function(incResults) {
-              state.rawExpenses = expResults.data;
-              state.rawIncomes = incResults.data;
+              state.rawExpenses = expResults.data || [];
+              state.rawIncomes = incResults.data || [];
               
               const expCols = Object.keys(expResults.data[0] || {});
               const incCols = Object.keys(incResults.data[0] || {});
@@ -943,24 +990,25 @@ function fetchSheetData(fromModal = false) {
       });
     })
     .catch(error => {
-      console.error(error);
+      console.error('同步失敗：', error);
+      logErrorToConsole(error.message, 'Google Sheet 同步');
       updateSyncStatus('offline', '資料讀取失敗');
       if (fromModal) {
         showModalError('讀取失敗！請確認您的 Google Sheet 已開啟「知道連結的任何人」公開檢視。');
       } else {
-        alert('同步失敗，請檢查 GID 是否填寫正確且已公開檢視。已為您先載入 Demo 數據！');
-        loadMockData();
+        loadMockData(true);
       }
     });
 
   } else {
     // 單一分頁模式：僅拉取單一 GID
     const singleGid = state.singleGid || '0';
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${singleGid}`;
+    // 使用 Gviz 格式 (支援 CORS)
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${singleGid}`;
     
     fetch(csvUrl)
       .then(response => {
-        if (!response.ok) throw new Error('網頁回應錯誤');
+        if (!response.ok) throw new Error(`工作表下載失敗 (HTTP ${response.status})`);
         return response.text();
       })
       .then(csvText => {
@@ -968,7 +1016,7 @@ function fetchSheetData(fromModal = false) {
           header: true,
           skipEmptyLines: true,
           complete: function(results) {
-            state.rawTransactions = results.data;
+            state.rawTransactions = results.data || [];
             state.columns = Object.keys(results.data[0] || {});
             
             autoDetectMapping();
@@ -988,10 +1036,14 @@ function fetchSheetData(fromModal = false) {
         });
       })
       .catch(error => {
-        console.error(error);
+        console.error('同步失敗：', error);
+        logErrorToConsole(error.message, 'Google Sheet 同步');
         updateSyncStatus('offline', '讀取失敗');
-        alert('單一分頁模式讀取失敗，請確認已開放公開檢視！已載入 Demo。');
-        loadMockData();
+        if (fromModal) {
+          showModalError('單一分頁模式讀取失敗，請確認已開放公開檢視！');
+        } else {
+          loadMockData(true);
+        }
       });
   }
 }
@@ -2236,8 +2288,12 @@ function updateSyncStatus(status, text) {
 }
 
 // 12. 載入 Demo 資料 (自動生成跨 2025 與 2026 兩年度的收支)
-function loadMockData() {
-  updateSyncStatus('online', '使用樂肉家 Demo 數據');
+function loadMockData(isFallback = false) {
+  if (isFallback) {
+    updateSyncStatus('offline', '自動同步失敗，已載入 Demo 數據');
+  } else {
+    updateSyncStatus('online', '使用樂肉家 Demo 數據');
+  }
   
   const members = ['爸爸 (樂肉)', '媽媽', '小明 (大兒子)', '小華 (二女兒)'];
   const categoriesExpense = ['餐飲食品', '交通出行', '娛樂消費', '居家水電', '教育學習', '醫療健康', '貓咪生活/飼料'];

@@ -413,8 +413,8 @@ body {
 .select-control option,
 .select-control-full option,
 select option {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 .form-control {

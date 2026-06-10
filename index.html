@@ -80,6 +80,12 @@
       </nav>
       
       <div class="sidebar-footer">
+        <!-- 管理員登入入口 -->
+        <a href="#" id="btn-admin-login" style="font-size: 11px; color: var(--text-muted); text-align: center; text-decoration: none; display: none; align-items: center; justify-content: center; gap: 4px; padding: 6px; border-radius: 4px; background: rgba(255,255,255,0.02); transition: var(--transition-smooth); cursor: pointer; margin-bottom: 4px;">
+          <i data-lucide="shield-alert" style="width: 12px; height: 12px;"></i>
+          <span>管理員登入</span>
+        </a>
+        
         <div class="status-indicator online" id="sync-status-indicator">
           <span class="dot"></span>
           <span class="status-text" id="sync-status-text">載入中...</span>
@@ -684,6 +690,6 @@
   </div>
 
   <!-- Cache busted script load -->
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

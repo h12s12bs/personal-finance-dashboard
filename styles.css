@@ -410,6 +410,13 @@ body {
   outline: none;
 }
 
+.select-control option,
+.select-control-full option,
+select option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .form-control {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--card-border);

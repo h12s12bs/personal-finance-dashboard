@@ -83,7 +83,8 @@ const state = {
   usePassword: false,
   lockPassword: '',
   isLocked: false,
-  encryptedConfig: ''
+  encryptedConfig: '',
+  isAdmin: true
 };
 
 // 圖表實例
@@ -334,6 +335,30 @@ function bindEvents() {
     }
   });
 
+  // 管理員登入點擊
+  const adminLoginBtn = document.getElementById('btn-admin-login');
+  if (adminLoginBtn) {
+    adminLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!state.usePassword || !state.lockPassword) {
+        alert('尚未設定解鎖密碼，請先由管理員在主控裝置設定密碼鎖以啟用管理員登入。');
+        return;
+      }
+      
+      const pwd = prompt('請輸入管理員解鎖密碼：');
+      if (pwd === null) return; // 使用者按取消
+      
+      if (pwd === state.lockPassword) {
+        state.isAdmin = true;
+        saveSettingsToStorage();
+        applyAdminAccess();
+        alert('管理員登入成功！已開啟資料設定權限。');
+      } else {
+        alert('密碼錯誤！無法開啟管理權限。');
+      }
+    });
+  }
+
   // Modal 按鈕
   document.getElementById('modal-btn-demo').addEventListener('click', () => {
     loadMockData();
@@ -485,6 +510,9 @@ function loadSettingsFromStorage() {
       state.usePassword = !!config.usePassword;
       state.lockPassword = config.lockPassword || '';
       
+      // 載入管理員權限
+      state.isAdmin = config.isAdmin !== false;
+      
       // 同步 Radio
       const radio = document.querySelector(`input[name="setting-sheet-mode"][value="${state.sheetMode}"]`);
       if (radio) radio.checked = true;
@@ -514,6 +542,7 @@ function loadSettingsFromStorage() {
         document.getElementById('password-lock-overlay').style.display = 'flex';
       }
 
+      applyAdminAccess();
       updateSettingsFormLayout();
     } catch (e) {
       console.error('解析儲存的設定失敗', e);
@@ -540,7 +569,8 @@ function saveSettingsToStorage() {
     monthlyBudget: state.monthlyBudget,
     annualSavingsGoal: state.annualSavingsGoal,
     usePassword: state.usePassword,
-    lockPassword: state.lockPassword
+    lockPassword: state.lockPassword,
+    isAdmin: state.isAdmin
   };
   localStorage.setItem('finance_lerou_auto_config', JSON.stringify(config));
   generateShareLink();
@@ -557,7 +587,8 @@ function generateShareLink() {
     matchExpense: state.matchExpense,
     matchIncome: state.matchIncome,
     monthlyBudget: state.monthlyBudget,
-    annualSavingsGoal: state.annualSavingsGoal
+    annualSavingsGoal: state.annualSavingsGoal,
+    isAdmin: false // 共享給家人的連結預設為唯讀模式（隱藏資料設定）
   };
   try {
     const jsonStr = JSON.stringify(config);
@@ -690,6 +721,28 @@ function unlockDashboard(password) {
     } else {
       if (errDiv) errDiv.style.display = 'block';
       return false;
+    }
+  }
+}
+
+function applyAdminAccess() {
+  const settingsTab = document.querySelector('.nav-item[data-tab="settings"]');
+  const connectBtn = document.getElementById('btn-open-config');
+  const adminLogin = document.getElementById('btn-admin-login');
+  
+  if (state.isAdmin) {
+    if (settingsTab) settingsTab.style.display = 'flex';
+    if (connectBtn) connectBtn.style.display = 'inline-flex';
+    if (adminLogin) adminLogin.style.display = 'none';
+  } else {
+    if (settingsTab) settingsTab.style.display = 'none';
+    if (connectBtn) connectBtn.style.display = 'none';
+    if (adminLogin) adminLogin.style.display = 'flex';
+    
+    // 如果當前在設定頁面，強制切換回儀表板
+    const activeTab = document.querySelector('.nav-item.active');
+    if (activeTab && activeTab.getAttribute('data-tab') === 'settings') {
+      switchTab('dashboard');
     }
   }
 }

@@ -555,7 +555,11 @@ function loadSettingsFromStorage() {
       // 檢查此 Session 是否已解鎖過
       if (state.usePassword && sessionStorage.getItem('dashboard_session_unlocked') !== 'true') {
         state.isLocked = true;
-        document.getElementById('password-lock-overlay').style.display = 'flex';
+        const overlay = document.getElementById('password-lock-overlay');
+        if (overlay) {
+          overlay.style.display = 'flex';
+          setTimeout(() => overlay.classList.add('active'), 10);
+        }
         updateSyncStatus('loading', '安全鎖定中 (請解鎖)');
       }
 
@@ -757,14 +761,23 @@ function parseSharedUrlConfig() {
   let configParam = urlParams.get('config');
   if (configParam) {
     configParam = configParam.trim().replace(/ /g, '+');
+    if (configParam === 'null' || configParam === 'undefined') {
+      configParam = null;
+    }
   }
   
   let encryptedParam = urlParams.get('encrypted');
   if (encryptedParam) {
     encryptedParam = encryptedParam.trim().replace(/ /g, '+');
+    if (encryptedParam === 'null' || encryptedParam === 'undefined') {
+      encryptedParam = null;
+    }
   } else {
     // 3. Fallback: 嘗試自 sessionStorage 讀取先前儲存但尚未解密成功的密文，防止行動裝置重新整理時遺失
     encryptedParam = sessionStorage.getItem('pending_encrypted_config');
+    if (encryptedParam === 'null' || encryptedParam === 'undefined') {
+      encryptedParam = null;
+    }
   }
 
   const baseUrl = window.location.href.split('?')[0].split('#')[0];
@@ -798,6 +811,7 @@ function parseSharedUrlConfig() {
     const overlay = document.getElementById('password-lock-overlay');
     if (overlay) {
       overlay.style.display = 'flex';
+      setTimeout(() => overlay.classList.add('active'), 10);
     }
     
     // 清除網址列參數避免重新整理覆蓋
@@ -826,6 +840,18 @@ function unlockDashboard(password) {
   const errDiv = document.getElementById('lock-error-msg');
   if (errDiv) errDiv.style.display = 'none';
 
+  const hideLockOverlay = () => {
+    const overlay = document.getElementById('password-lock-overlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      setTimeout(() => {
+        if (!overlay.classList.contains('active')) {
+          overlay.style.display = 'none';
+        }
+      }, 300);
+    }
+  };
+
   if (state.encryptedConfig) {
     // 情況 A：開啟帶有加密的共享網址，嘗試解密
     try {
@@ -851,7 +877,7 @@ function unlockDashboard(password) {
         
         // 載入配置並抓取資料
         loadSettingsFromStorage();
-        document.getElementById('password-lock-overlay').style.display = 'none';
+        hideLockOverlay();
         
         if (state.sheetUrl) {
           fetchSheetData();
@@ -872,7 +898,7 @@ function unlockDashboard(password) {
       // 密碼正確
       sessionStorage.setItem('dashboard_session_unlocked', 'true');
       state.isLocked = false;
-      document.getElementById('password-lock-overlay').style.display = 'none';
+      hideLockOverlay();
       
       if (state.sheetUrl) {
         fetchSheetData();

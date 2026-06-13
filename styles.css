@@ -1301,12 +1301,38 @@ select option {
     left: 0;
     width: 280px;
     height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 100;
     box-shadow: var(--shadow-lg);
     background-color: var(--bg-sidebar);
-    padding: 2rem 1.5rem;
+    padding: 2rem 1.5rem calc(110px + env(safe-area-inset-bottom)) 1.5rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 手機選單內「立即同步」按鈕與狀態優化，避免被 iOS 工具列阻擋且更易點擊 */
+  .sidebar #btn-sync-now {
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .sidebar #btn-sync-now i {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sidebar .status-indicator {
+    font-size: 0.9rem;
+    justify-content: center;
+    margin-bottom: 4px;
   }
   
   .sidebar.active {

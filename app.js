@@ -1262,6 +1262,8 @@ function autoDetectMapping() {
   const sourceKeywords = ['來源', '收入來源', '來源類別', 'source', 'from'];
   const amountKeywords = ['金額', '錢', '金額(元)', 'amount', 'price', '數值', '花費'];
   const remarkKeywords = ['備註', '項目', '細項', '備忘', '說明', 'remark', 'details', '名稱'];
+  const methodKeywords = ['消費方式', '支付方式', '付款方式', '消費類別', '消費', '支付', 'payment', 'method', 'pay'];
+  const bankKeywords = ['存入銀行', '銀行', '帳戶', '存入', 'bank', 'account'];
 
   const findMatch = (keywords, colList) => {
     return colList.find(col => {
@@ -1271,7 +1273,7 @@ function autoDetectMapping() {
   };
 
   // 1. 偵測支出欄位對應
-  ['date', 'member', 'category', 'amount', 'remark'].forEach(field => {
+  ['date', 'member', 'category', 'amount', 'remark', 'method'].forEach(field => {
     if (state.mapping.expense[field] && expCols.includes(state.mapping.expense[field])) {
       // 保持原設定
     } else {
@@ -1280,11 +1282,12 @@ function autoDetectMapping() {
       else if (field === 'category') state.mapping.expense.category = findMatch(categoryKeywords, expCols);
       else if (field === 'amount') state.mapping.expense.amount = findMatch(amountKeywords, expCols);
       else if (field === 'remark') state.mapping.expense.remark = findMatch(remarkKeywords, expCols);
+      else if (field === 'method') state.mapping.expense.method = findMatch(methodKeywords, expCols);
     }
   });
 
   // 2. 偵測收入欄位對應
-  ['date', 'member', 'category', 'source', 'amount', 'remark'].forEach(field => {
+  ['date', 'member', 'category', 'source', 'amount', 'remark', 'bank'].forEach(field => {
     if (state.mapping.income[field] && incCols.includes(state.mapping.income[field])) {
       // 保持原設定
     } else {
@@ -1294,11 +1297,12 @@ function autoDetectMapping() {
       else if (field === 'source') state.mapping.income.source = findMatch(sourceKeywords, incCols) || findMatch(categoryKeywords, incCols);
       else if (field === 'amount') state.mapping.income.amount = findMatch(amountKeywords, incCols);
       else if (field === 'remark') state.mapping.income.remark = findMatch(remarkKeywords, incCols);
+      else if (field === 'bank') state.mapping.income.bank = findMatch(bankKeywords, incCols);
     }
   });
 
   // 3. 偵測合併欄位對應
-  ['date', 'member', 'category', 'source', 'amount', 'remark', 'type'].forEach(field => {
+  ['date', 'member', 'category', 'source', 'amount', 'remark', 'type', 'method', 'bank'].forEach(field => {
     if (state.mapping.combined[field] && combCols.includes(state.mapping.combined[field])) {
       // 保持原設定
     } else {
@@ -1309,6 +1313,8 @@ function autoDetectMapping() {
       else if (field === 'amount') state.mapping.combined.amount = findMatch(amountKeywords, combCols);
       else if (field === 'remark') state.mapping.combined.remark = findMatch(remarkKeywords, combCols);
       else if (field === 'type') state.mapping.combined.type = findMatch(typeKeywords, combCols);
+      else if (field === 'method') state.mapping.combined.method = findMatch(methodKeywords, combCols);
+      else if (field === 'bank') state.mapping.combined.bank = findMatch(bankKeywords, combCols);
     }
   });
 }

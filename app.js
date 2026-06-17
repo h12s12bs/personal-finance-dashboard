@@ -2394,10 +2394,53 @@ function renderTransactionsTable() {
 
   tbody.innerHTML = '';
 
+  const filterType = state.tableFilters.type; // 'all', '支出', '收入'
+  const theadTr = document.querySelector('#transactions-table thead tr');
+  
+  if (theadTr) {
+    if (filterType === '支出') {
+      theadTr.innerHTML = `
+        <th>日期</th>
+        <th>成員</th>
+        <th>收支</th>
+        <th>類別</th>
+        <th>金額</th>
+        <th>消費方式</th>
+        <th>項目 / 備註</th>
+      `;
+    } else if (filterType === '收入') {
+      theadTr.innerHTML = `
+        <th>日期</th>
+        <th>成員</th>
+        <th>收支</th>
+        <th>類別</th>
+        <th>來源</th>
+        <th>金額</th>
+        <th>存入銀行</th>
+        <th>項目 / 備註</th>
+      `;
+    } else {
+      // 'all'
+      theadTr.innerHTML = `
+        <th>日期</th>
+        <th>成員</th>
+        <th>收支</th>
+        <th>類別</th>
+        <th>來源</th>
+        <th>金額</th>
+        <th>消費方式</th>
+        <th>存入銀行</th>
+        <th>項目 / 備註</th>
+      `;
+    }
+  }
+
+  const colSpanCount = filterType === '支出' ? 7 : (filterType === '收入' ? 8 : 9);
+
   if (pageItems.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center py-8 text-muted">
+        <td colspan="${colSpanCount}" class="text-center py-8 text-muted">
           無符合篩選條件的帳目明細。
         </td>
       </tr>
@@ -2413,17 +2456,41 @@ function renderTransactionsTable() {
     const amountClass = isIncome ? 'income' : 'expense';
     const amountPrefix = isIncome ? '+' : '-';
 
-    tr.innerHTML = `
-      <td>${t.date}</td>
-      <td><strong>${t.member}</strong></td>
-      <td><span class="badge-row-type ${typeBadge}">${t.type}</span></td>
-      <td>${t.category || '-'}</td>
-      <td>${isIncome ? (t.source || '-') : '-'}</td>
-      <td class="td-amount ${amountClass}">${amountPrefix} NT$ ${Math.round(t.amount).toLocaleString()}</td>
-      <td>${!isIncome ? (t.method || '-') : '-'}</td>
-      <td>${isIncome ? (t.bank || '-') : '-'}</td>
-      <td class="text-secondary">${t.remark || '-'}</td>
-    `;
+    if (filterType === '支出') {
+      tr.innerHTML = `
+        <td>${t.date}</td>
+        <td><strong>${t.member}</strong></td>
+        <td><span class="badge-row-type ${typeBadge}">${t.type}</span></td>
+        <td>${t.category || '-'}</td>
+        <td class="td-amount ${amountClass}">${amountPrefix} NT$ ${Math.round(t.amount).toLocaleString()}</td>
+        <td>${t.method || '-'}</td>
+        <td class="text-secondary">${t.remark || '-'}</td>
+      `;
+    } else if (filterType === '收入') {
+      tr.innerHTML = `
+        <td>${t.date}</td>
+        <td><strong>${t.member}</strong></td>
+        <td><span class="badge-row-type ${typeBadge}">${t.type}</span></td>
+        <td>${t.category || '-'}</td>
+        <td>${t.source || '-'}</td>
+        <td class="td-amount ${amountClass}">${amountPrefix} NT$ ${Math.round(t.amount).toLocaleString()}</td>
+        <td>${t.bank || '-'}</td>
+        <td class="text-secondary">${t.remark || '-'}</td>
+      `;
+    } else {
+      // 'all'
+      tr.innerHTML = `
+        <td>${t.date}</td>
+        <td><strong>${t.member}</strong></td>
+        <td><span class="badge-row-type ${typeBadge}">${t.type}</span></td>
+        <td>${t.category || '-'}</td>
+        <td>${isIncome ? (t.source || '-') : '-'}</td>
+        <td class="td-amount ${amountClass}">${amountPrefix} NT$ ${Math.round(t.amount).toLocaleString()}</td>
+        <td>${!isIncome ? (t.method || '-') : '-'}</td>
+        <td>${isIncome ? (t.bank || '-') : '-'}</td>
+        <td class="text-secondary">${t.remark || '-'}</td>
+      `;
+    }
     tbody.appendChild(tr);
   });
 }

@@ -48,7 +48,8 @@ const state = {
       member: '',
       category: '',
       amount: '',
-      remark: ''
+      remark: '',
+      method: ''
     },
     income: {
       date: '',
@@ -56,7 +57,8 @@ const state = {
       category: '',
       source: '',
       amount: '',
-      remark: ''
+      remark: '',
+      bank: ''
     },
     combined: {
       date: '',
@@ -65,7 +67,9 @@ const state = {
       source: '',
       amount: '',
       remark: '',
-      type: ''
+      type: '',
+      method: '',
+      bank: ''
     }
   },
   
@@ -770,7 +774,8 @@ function compressConfig(config) {
         m: config.mapping.expense.member || '',
         c: config.mapping.expense.category || '',
         a: config.mapping.expense.amount || '',
-        r: config.mapping.expense.remark || ''
+        r: config.mapping.expense.remark || '',
+        mt: config.mapping.expense.method || ''
       } : {},
       i: config.mapping && config.mapping.income ? {
         d: config.mapping.income.date || '',
@@ -778,7 +783,8 @@ function compressConfig(config) {
         c: config.mapping.income.category || '',
         s: config.mapping.income.source || '',
         a: config.mapping.income.amount || '',
-        r: config.mapping.income.remark || ''
+        r: config.mapping.income.remark || '',
+        b: config.mapping.income.bank || ''
       } : {},
       cb: config.mapping && config.mapping.combined ? {
         d: config.mapping.combined.date || '',
@@ -787,7 +793,9 @@ function compressConfig(config) {
         s: config.mapping.combined.source || '',
         a: config.mapping.combined.amount || '',
         r: config.mapping.combined.remark || '',
-        t: config.mapping.combined.type || ''
+        t: config.mapping.combined.type || '',
+        mt: config.mapping.combined.method || '',
+        b: config.mapping.combined.bank || ''
       } : {}
     }
   };
@@ -823,7 +831,8 @@ function decompressConfig(short) {
         member: short.mp.e.m || '',
         category: short.mp.e.c || '',
         amount: short.mp.e.a || '',
-        remark: short.mp.e.r || ''
+        remark: short.mp.e.r || '',
+        method: short.mp.e.mt || ''
       } : {},
       income: short.mp && short.mp.i ? {
         date: short.mp.i.d || '',
@@ -831,7 +840,8 @@ function decompressConfig(short) {
         category: short.mp.i.c || '',
         source: short.mp.i.s || '',
         amount: short.mp.i.a || '',
-        remark: short.mp.i.r || ''
+        remark: short.mp.i.r || '',
+        bank: short.mp.i.b || ''
       } : {},
       combined: short.mp && short.mp.cb ? {
         date: short.mp.cb.d || '',
@@ -840,7 +850,9 @@ function decompressConfig(short) {
         source: short.mp.cb.s || '',
         amount: short.mp.cb.a || '',
         remark: short.mp.cb.r || '',
-        type: short.mp.cb.t || ''
+        type: short.mp.cb.t || '',
+        method: short.mp.cb.mt || '',
+        bank: short.mp.cb.b || ''
       } : {}
     }
   };
@@ -1328,6 +1340,7 @@ function renderMappingSelectors() {
   populateSelect('map-exp-category', expCols, state.mapping.expense.category);
   populateSelect('map-exp-amount', expCols, state.mapping.expense.amount);
   populateSelect('map-exp-remark', expCols, state.mapping.expense.remark);
+  populateSelect('map-exp-method', expCols, state.mapping.expense.method);
 
   // 渲染收入
   populateSelect('map-inc-date', incCols, state.mapping.income.date);
@@ -1336,6 +1349,7 @@ function renderMappingSelectors() {
   populateSelect('map-inc-source', incCols, state.mapping.income.source);
   populateSelect('map-inc-amount', incCols, state.mapping.income.amount);
   populateSelect('map-inc-remark', incCols, state.mapping.income.remark);
+  populateSelect('map-inc-bank', incCols, state.mapping.income.bank);
 
   // 渲染合併
   populateSelect('map-comb-date', combCols, state.mapping.combined.date);
@@ -1345,33 +1359,99 @@ function renderMappingSelectors() {
   populateSelect('map-comb-amount', combCols, state.mapping.combined.amount);
   populateSelect('map-comb-remark', combCols, state.mapping.combined.remark);
   populateSelect('map-comb-type', combCols, state.mapping.combined.type);
+  populateSelect('map-comb-method', combCols, state.mapping.combined.method);
+  populateSelect('map-comb-bank', combCols, state.mapping.combined.bank);
 }
 
 // 6. 資料處理邏輯 (Data Processing)
 function applyMappingAndProcess() {
   let mapped = [];
 
-  // 清洗日期格式
+  // 清洗日期與時間格式
   const cleanDateString = (rawDate) => {
     let dStr = String(rawDate).trim();
     if (!dStr) return '';
     
-    // 處理 "2026/6/10 下午 3:15:30" 格式，拿前段日期
-    if (dStr.includes(' ')) {
-      dStr = dStr.split(' ')[0];
+    let isPM = dStr.includes('下午') || dStr.includes('PM') || dStr.includes('pm');
+    let isAM = dStr.includes('上午') || dStr.includes('AM') || dStr.includes('am');
+    
+    let cleaned = dStr.replace(/下午|上午|PM|AM|pm|am/g, '').replace(/\s+/g, ' ').trim();
+    
+    let datePart = '';
+    let timePart = '00:00:00';
+    
+    if (cleaned.includes(' ')) {
+      const parts = cleaned.split(' ');
+      datePart = parts[0];
+      timePart = parts[1];
+    } else {
+      datePart = cleaned;
     }
     
-    // 把斜線 "/" 轉換為 "-"，並補零 (例如 2026/6/5 -> 2026-06-05)
-    if (dStr.includes('/')) {
-      const parts = dStr.split('/');
-      if (parts.length === 3) {
-        const y = parts[0];
-        const m = parts[1].padStart(2, '0');
-        const d = parts[2].padStart(2, '0');
-        dStr = `${y}-${m}-${d}`;
+    let y = '', m = '', d = '';
+    if (datePart.includes('/')) {
+      const dParts = datePart.split('/');
+      if (dParts.length === 3) {
+        if (dParts[0].length === 4) {
+          y = dParts[0];
+          m = dParts[1].padStart(2, '0');
+          d = dParts[2].padStart(2, '0');
+        } else if (dParts[2].length === 4) {
+          y = dParts[2];
+          m = dParts[0].padStart(2, '0');
+          d = dParts[1].padStart(2, '0');
+        }
+      }
+    } else if (datePart.includes('-')) {
+      const dParts = datePart.split('-');
+      if (dParts.length === 3) {
+        if (dParts[0].length === 4) {
+          y = dParts[0];
+          m = dParts[1].padStart(2, '0');
+          d = dParts[2].padStart(2, '0');
+        } else if (dParts[2].length === 4) {
+          y = dParts[2];
+          m = dParts[0].padStart(2, '0');
+          d = dParts[1].padStart(2, '0');
+        }
       }
     }
-    return dStr;
+    
+    if (!y || !m || !d) {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime())) {
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+        const day = String(parsed.getDate()).padStart(2, '0');
+        const hour = String(parsed.getHours()).padStart(2, '0');
+        const min = String(parsed.getMinutes()).padStart(2, '0');
+        const sec = String(parsed.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
+      }
+      return dStr;
+    }
+    
+    let hh = 0, mm = 0, ss = 0;
+    const tParts = timePart.split(':');
+    if (tParts.length >= 2) {
+      hh = parseInt(tParts[0], 10) || 0;
+      mm = parseInt(tParts[1], 10) || 0;
+      if (tParts.length >= 3) {
+        ss = parseInt(tParts[2], 10) || 0;
+      }
+    }
+    
+    if (isPM && hh < 12) {
+      hh += 12;
+    } else if (isAM && hh === 12) {
+      hh = 0;
+    }
+    
+    const formattedHour = String(hh).padStart(2, '0');
+    const formattedMin = String(mm).padStart(2, '0');
+    const formattedSec = String(ss).padStart(2, '0');
+    
+    return `${y}-${m}-${d} ${formattedHour}:${formattedMin}:${formattedSec}`;
   };
 
   // 清洗金額
@@ -1383,6 +1463,7 @@ function applyMappingAndProcess() {
   if (state.sheetMode === 'separate') {
     // 獨立分頁模式下：分別使用各自的對應設定自動標記
     const mappedExpenses = state.rawExpenses.map(raw => {
+      const methodField = state.mapping.expense.method;
       return {
         date: cleanDateString(raw[state.mapping.expense.date]),
         member: String(raw[state.mapping.expense.member] || '未指定').trim() || '未指定',
@@ -1390,11 +1471,14 @@ function applyMappingAndProcess() {
         category: String(raw[state.mapping.expense.category] || '其他').trim() || '其他',
         source: '',
         amount: cleanAmountValue(raw[state.mapping.expense.amount]),
+        method: methodField ? String(raw[methodField] || '-').trim() : '-',
+        bank: '-',
         remark: String(raw[state.mapping.expense.remark] || '').trim()
       };
     });
 
     const mappedIncomes = state.rawIncomes.map(raw => {
+      const bankField = state.mapping.income.bank;
       return {
         date: cleanDateString(raw[state.mapping.income.date]),
         member: String(raw[state.mapping.income.member] || '未指定').trim() || '未指定',
@@ -1402,6 +1486,8 @@ function applyMappingAndProcess() {
         category: String(raw[state.mapping.income.category] || '其他').trim() || '其他',
         source: String(raw[state.mapping.income.source] || '').trim() || String(raw[state.mapping.income.category] || '其他').trim(),
         amount: cleanAmountValue(raw[state.mapping.income.amount]),
+        method: '-',
+        bank: bankField ? String(raw[bankField] || '-').trim() : '-',
         remark: String(raw[state.mapping.income.remark] || '').trim()
       };
     });
@@ -1421,6 +1507,9 @@ function applyMappingAndProcess() {
         type = rawType.includes('入') ? '收入' : '支出';
       }
 
+      const methodField = state.mapping.combined.method;
+      const bankField = state.mapping.combined.bank;
+
       return {
         date: cleanDateString(raw[state.mapping.combined.date]),
         member: String(raw[state.mapping.combined.member] || '未指定').trim() || '未指定',
@@ -1428,6 +1517,8 @@ function applyMappingAndProcess() {
         category: String(raw[state.mapping.combined.category] || '其他').trim() || '其他',
         source: type === '收入' ? (String(raw[state.mapping.combined.source] || '').trim() || String(raw[state.mapping.combined.category] || '其他').trim()) : '',
         amount: cleanAmountValue(raw[state.mapping.combined.amount]),
+        method: type === '支出' && methodField ? String(raw[methodField] || '-').trim() : '-',
+        bank: type === '收入' && bankField ? String(raw[bankField] || '-').trim() : '-',
         remark: String(raw[state.mapping.combined.remark] || '').trim()
       };
     });
@@ -2259,12 +2350,14 @@ function getFilteredAndSearchedTransactions() {
       return false;
     }
 
-    // 關鍵字搜尋 (包含成員、類別、來源、項目/備註、日期)
+    // 關鍵字搜尋 (包含成員、類別、來源、項目/備註、日期、消費方式、存入銀行)
     if (state.tableFilters.searchQuery) {
       const q = state.tableFilters.searchQuery;
       return t.member.toLowerCase().includes(q) || 
              t.category.toLowerCase().includes(q) || 
              (t.source && t.source.toLowerCase().includes(q)) ||
+             (t.method && t.method.toLowerCase().includes(q)) ||
+             (t.bank && t.bank.toLowerCase().includes(q)) ||
              t.remark.toLowerCase().includes(q) ||
              t.date.includes(q);
     }
@@ -2298,7 +2391,7 @@ function renderTransactionsTable() {
   if (pageItems.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center py-8 text-muted">
+        <td colspan="9" class="text-center py-8 text-muted">
           無符合篩選條件的帳目明細。
         </td>
       </tr>
@@ -2318,8 +2411,11 @@ function renderTransactionsTable() {
       <td>${t.date}</td>
       <td><strong>${t.member}</strong></td>
       <td><span class="badge-row-type ${typeBadge}">${t.type}</span></td>
-      <td>${t.type === '收入' ? (t.source || t.category) : t.category}</td>
+      <td>${t.category || '-'}</td>
+      <td>${isIncome ? (t.source || '-') : '-'}</td>
       <td class="td-amount ${amountClass}">${amountPrefix} NT$ ${Math.round(t.amount).toLocaleString()}</td>
+      <td>${!isIncome ? (t.method || '-') : '-'}</td>
+      <td>${isIncome ? (t.bank || '-') : '-'}</td>
       <td class="text-secondary">${t.remark || '-'}</td>
     `;
     tbody.appendChild(tr);
@@ -2335,12 +2431,15 @@ function exportToCSV() {
   }
 
   let csvContent = '\uFEFF'; // BOM
-  csvContent += '日期,成員,收支類型,類別/來源,金額,項目備註\n';
+  csvContent += '日期,成員,收支類型,類別,來源,金額,消費方式,存入銀行,項目備註\n';
   
   list.forEach(t => {
     const remark = t.remark ? `"${t.remark.replace(/"/g, '""')}"` : '';
-    const catOrSrc = t.type === '收入' ? (t.source || t.category) : t.category;
-    csvContent += `${t.date},${t.member},${t.type},${catOrSrc},${t.amount},${remark}\n`;
+    const category = t.category || '';
+    const source = t.type === '收入' ? (t.source || '') : '';
+    const method = t.type === '支出' ? (t.method || '') : '';
+    const bank = t.type === '收入' ? (t.bank || '') : '';
+    csvContent += `${t.date},${t.member},${t.type},${category},${source},${t.amount},${method},${bank},${remark}\n`;
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -2409,6 +2508,7 @@ function saveMappingSettings() {
     state.mapping.expense.category = document.getElementById('map-exp-category').value;
     state.mapping.expense.amount = document.getElementById('map-exp-amount').value;
     state.mapping.expense.remark = document.getElementById('map-exp-remark').value;
+    state.mapping.expense.method = document.getElementById('map-exp-method').value;
 
     state.mapping.income.date = document.getElementById('map-inc-date').value;
     state.mapping.income.member = document.getElementById('map-inc-member').value;
@@ -2416,6 +2516,7 @@ function saveMappingSettings() {
     state.mapping.income.source = document.getElementById('map-inc-source').value;
     state.mapping.income.amount = document.getElementById('map-inc-amount').value;
     state.mapping.income.remark = document.getElementById('map-inc-remark').value;
+    state.mapping.income.bank = document.getElementById('map-inc-bank').value;
   } else {
     state.mapping.combined.date = document.getElementById('map-comb-date').value;
     state.mapping.combined.member = document.getElementById('map-comb-member').value;
@@ -2424,6 +2525,8 @@ function saveMappingSettings() {
     state.mapping.combined.amount = document.getElementById('map-comb-amount').value;
     state.mapping.combined.remark = document.getElementById('map-comb-remark').value;
     state.mapping.combined.type = document.getElementById('map-comb-type').value;
+    state.mapping.combined.method = document.getElementById('map-comb-method').value;
+    state.mapping.combined.bank = document.getElementById('map-comb-bank').value;
     
     state.matchExpense = document.getElementById('val-match-expense').value.trim() || '支出';
     state.matchIncome = document.getElementById('val-match-income').value.trim() || '收入';

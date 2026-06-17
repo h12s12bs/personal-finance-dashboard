@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=31">
+  <link rel="stylesheet" href="styles.css?v=32">
   
   <!-- Chart.js for beautiful charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -330,14 +330,17 @@
                     <th>日期</th>
                     <th>成員</th>
                     <th>收支</th>
-                    <th>類別 / 來源</th>
+                    <th>類別</th>
+                    <th>來源</th>
                     <th>金額</th>
+                    <th>消費方式</th>
+                    <th>存入銀行</th>
                     <th>項目 / 備註</th>
                   </tr>
                 </thead>
                 <tbody id="table-body">
                   <tr>
-                    <td colspan="6" class="text-center py-8">
+                    <td colspan="9" class="text-center py-8">
                       <div class="loading-spinner-inline"></div>
                       <p class="text-muted mt-2">載入明細中...</p>
                     </td>
@@ -507,6 +510,10 @@
                     <label for="map-exp-remark">項目/備註欄位</label>
                     <select id="map-exp-remark" class="form-control select-control-full"></select>
                   </div>
+                  <div class="form-group">
+                    <label for="map-exp-method">消費方式欄位</label>
+                    <select id="map-exp-method" class="form-control select-control-full"></select>
+                  </div>
                 </div>
 
                 <!-- Income Mappings -->
@@ -535,6 +542,10 @@
                   <div class="form-group">
                     <label for="map-inc-remark">項目/備註欄位</label>
                     <select id="map-inc-remark" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-inc-bank">存入銀行欄位</label>
+                    <select id="map-inc-bank" class="form-control select-control-full"></select>
                   </div>
                 </div>
               </div>
@@ -570,6 +581,14 @@
                   <div class="form-group">
                     <label for="map-comb-type">收支類型欄位 (用來區分收/支)</label>
                     <select id="map-comb-type" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-method">消費方式欄位</label>
+                    <select id="map-comb-method" class="form-control select-control-full"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-comb-bank">存入銀行欄位</label>
+                    <select id="map-comb-bank" class="form-control select-control-full"></select>
                   </div>
                 </div>
 

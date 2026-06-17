@@ -967,6 +967,18 @@ select option {
   padding: 2rem;
 }
 
+.form-mobile-footer-spacer {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-top: 1px solid rgba(178, 94, 43, 0.08);
+  padding-top: 16px;
+}
+
 .settings-card h3 {
   font-size: 1.15rem;
   font-weight: 600;
@@ -1366,8 +1378,12 @@ select option {
     left: 0;
     width: 100vw;
     height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
     z-index: 90;
     background: var(--bg-primary);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
   
   #tab-forms .settings-card {
@@ -1394,5 +1410,26 @@ select option {
     border: none !important;
     border-radius: 0 !important;
     width: 100vw !important;
+    margin-bottom: 0 !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #tab-forms .iframe-wrapper iframe {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #tab-forms .form-mobile-footer-spacer {
+    margin-top: 0 !important;
+    border-top: 1px solid var(--card-border) !important;
+    background-color: var(--bg-secondary) !important;
+    padding: 12px 16px calc(110px + env(safe-area-inset-bottom)) 16px !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 }

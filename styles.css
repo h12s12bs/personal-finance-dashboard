@@ -1374,8 +1374,12 @@ select option {
     z-index: 90;
     background: var(--bg-primary);
     box-sizing: border-box;
-    display: flex;
+    display: none;
     flex-direction: column;
+  }
+  
+  #tab-forms.active {
+    display: flex;
   }
   
   #tab-forms .settings-card {
